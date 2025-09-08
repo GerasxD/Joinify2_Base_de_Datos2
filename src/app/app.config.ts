@@ -14,6 +14,6 @@ export const appConfig: ApplicationConfig = {
 
 // Configuración global de la API
 export const environment = {
-  apiUrl: 'http://172.16.135.189:3001' 
+  apiUrl: 'http://172.16.1.156:3001' 
 };
 

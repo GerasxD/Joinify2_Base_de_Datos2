@@ -1,0 +1,21 @@
+/* Animación de transición entre páginas */
+.route-anim-container {
+	position: relative;
+	min-height: 60vh;
+	margin-top: 100px; /* Espacio para el header fijo */
+}
+
+.route-anim-container > * {
+	animation: fadeSlideIn 0.5s cubic-bezier(.4,0,.2,1);
+}
+
+@keyframes fadeSlideIn {
+	from {
+		opacity: 0;
+		transform: translateY(30px) scale(0.98);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
