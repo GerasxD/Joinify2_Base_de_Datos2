@@ -20,11 +20,18 @@
           <li><a routerLink="/unir-grupo" routerLinkActive="active"><i class="fas fa-user-plus"></i> Unirme a un grupo</a></li>
           <li class="user-menu-container">
             <div class="user-name-clickable" [class.active]="showUserMenu" (click)="toggleUserMenu()">
-              Hola, {{ userName }}
+              <div class="user-avatar">
+                <img [src]="obtenerFotoPerfil()" [alt]="userName" class="avatar-circle">
+              </div>
+              <span class="user-greeting">Hola, {{ userName }}</span>
+              <i class="fas fa-chevron-down dropdown-arrow" [class.rotate]="showUserMenu"></i>
             </div>
             <div class="user-dropdown" [class.show]="showUserMenu">
               <a routerLink="/mis-grupos" (click)="closeMenus()">
                 <i class="fas fa-users"></i> Mis Grupos
+              </a>
+              <a routerLink="/configuracion" (click)="closeMenus()">
+                <i class="fas fa-user-cog"></i> Configuración
               </a>
               <a (click)="toggleNotificaciones(); $event.stopPropagation()">
                 <i class="fas fa-bell"></i> Mis Notificaciones

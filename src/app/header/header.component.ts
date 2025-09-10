@@ -1,18 +1,21 @@
 import { Component, OnInit, HostListener } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { DatePipe } from '@angular/common';
+import { DatePipe, CommonModule } from '@angular/common';
 import { environment } from '../app.config';
+import { UsuarioService } from '../services/usuario.service';
 
 @Component({
   selector: 'app-header',
-  imports: [RouterModule, DatePipe],
+  imports: [RouterModule, CommonModule],
   templateUrl: './header.component.html',
   styleUrl: './header.component.css'
 })
 export class HeaderComponent implements OnInit {
 
   userName: string = '';
+  userPhoto: string = '';
+  userId: number | null = null;
   showUserMenu = false;
   showNotificaciones = false;
   notificaciones: any[] = [];
@@ -20,10 +23,27 @@ export class HeaderComponent implements OnInit {
   historialPagos: any[] = [];
   datePipe = new DatePipe('es-MX');
 
-  constructor(private router: Router, private http: HttpClient) { }
+  constructor(
+    private router: Router, 
+    private http: HttpClient,
+    private usuarioService: UsuarioService
+  ) { }
 
   ngOnInit(): void {
     this.userName = localStorage.getItem('username') || '';
+    this.userId = parseInt(localStorage.getItem('userId') || '0') || null;
+    this.cargarFotoPerfil();
+    
+    // Suscribirse a cambios en el usuario (para actualizar foto)
+    this.usuarioService.usuarioActual$.subscribe(usuario => {
+      if (usuario) {
+        this.userName = usuario.nombre || this.userName;
+        this.userId = usuario.id_usuario || this.userId;
+        if (usuario.foto_perfil) {
+          this.userPhoto = usuario.foto_perfil;
+        }
+      }
+    });
   }
 
   isLoggedIn(): boolean {
@@ -32,7 +52,18 @@ export class HeaderComponent implements OnInit {
 
   logout(): void {
     localStorage.removeItem('username');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('usuario');
     localStorage.removeItem('authToken');
+    
+    // Limpiar datos del usuario
+    this.userName = '';
+    this.userPhoto = '';
+    this.userId = null;
+    
+    // Limpiar servicio de usuario
+    this.usuarioService.limpiarUsuario();
+    
     this.closeMenus();
     this.router.navigate(['/login']);
   }
@@ -136,5 +167,58 @@ export class HeaderComponent implements OnInit {
 
   trackById(index: number, item: any) {
     return item.id_notificacion;
+  }
+
+  // Cargar foto de perfil del usuario
+  cargarFotoPerfil(): void {
+    // 1. Verificar si hay usuario en el servicio (más actualizado)
+    const usuarioActual = this.usuarioService.usuarioActual;
+    if (usuarioActual?.foto_perfil) {
+      this.userPhoto = usuarioActual.foto_perfil;
+      return;
+    }
+
+    // 2. Obtener datos locales (localStorage específico del perfil)
+    if (this.userId) {
+      const datosLocales = localStorage.getItem(`perfil_extendido_${this.userId}`);
+      if (datosLocales) {
+        try {
+          const perfil = JSON.parse(datosLocales);
+          if (perfil.foto_perfil) {
+            this.userPhoto = perfil.foto_perfil;
+            return;
+          }
+        } catch (e) {
+          console.log('Error parsing datos locales de perfil');
+        }
+      }
+
+      // 3. Verificar en el usuario general del localStorage
+      const usuarioStorage = localStorage.getItem('usuario');
+      if (usuarioStorage) {
+        try {
+          const usuario = JSON.parse(usuarioStorage);
+          if (usuario.foto_perfil) {
+            this.userPhoto = usuario.foto_perfil;
+            return;
+          }
+        } catch (e) {
+          console.log('Error parsing usuario from localStorage');
+        }
+      }
+    }
+    
+    // Si no hay foto en ningún lado, usar imagen por defecto
+    this.userPhoto = this.obtenerFotoDefecto();
+  }
+
+  // Obtener URL de foto por defecto
+  obtenerFotoDefecto(): string {
+    return '/assets/imagenes/default-avatar.svg';
+  }
+
+  // Obtener la foto actual (para usar en el template)
+  obtenerFotoPerfil(): string {
+    return this.userPhoto || this.obtenerFotoDefecto();
   }
 }
