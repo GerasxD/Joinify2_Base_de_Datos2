@@ -208,11 +208,9 @@ export class ConfiguracionComponent implements OnInit {
         if (this.usuario) {
           // Actualizar la foto en el objeto usuario local
           this.usuario.foto_perfil = response.foto_url;
-          this.usuarioService.actualizarUsuarioLocal(this.usuario);
           
-          // Actualizar también el usuario en localStorage para el header
-          const usuarioActualizado = { ...this.usuario };
-          localStorage.setItem('usuario', JSON.stringify(usuarioActualizado));
+          // Notificar al servicio para que actualice todos los componentes suscritos
+          this.usuarioService.actualizarUsuarioLocal(this.usuario);
           
           this.mostrarNotificacion('Foto actualizada correctamente', 'exito');
           
@@ -236,13 +234,24 @@ export class ConfiguracionComponent implements OnInit {
       this.usuarioService.eliminarFotoPerfil(this.usuario.id_usuario).subscribe({
         next: () => {
           if (this.usuario) {
-            this.usuario.foto_perfil = undefined;
+            // Eliminar la foto del objeto usuario local
+            delete this.usuario.foto_perfil;
+            
+            // Notificar al servicio para que actualice todos los componentes suscritos
             this.usuarioService.actualizarUsuarioLocal(this.usuario);
             
-            // Actualizar también el usuario en localStorage para el header
-            const usuarioActualizado = { ...this.usuario };
-            delete usuarioActualizado.foto_perfil;
-            localStorage.setItem('usuario', JSON.stringify(usuarioActualizado));
+            // También limpiar datos específicos del perfil extendido
+            const perfilKey = `perfil_extendido_${this.usuario.id_usuario}`;
+            const datosLocales = localStorage.getItem(perfilKey);
+            if (datosLocales) {
+              try {
+                const perfil = JSON.parse(datosLocales);
+                delete perfil.foto_perfil;
+                localStorage.setItem(perfilKey, JSON.stringify(perfil));
+              } catch (e) {
+                console.log('Error al actualizar perfil extendido');
+              }
+            }
             
             this.mostrarNotificacion('Foto eliminada correctamente', 'exito');
           }

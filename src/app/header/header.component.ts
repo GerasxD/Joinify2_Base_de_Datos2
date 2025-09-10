@@ -39,8 +39,13 @@ export class HeaderComponent implements OnInit {
       if (usuario) {
         this.userName = usuario.nombre || this.userName;
         this.userId = usuario.id_usuario || this.userId;
+        
+        // Actualizar foto - si hay foto la usa, si no usa la por defecto
         if (usuario.foto_perfil) {
           this.userPhoto = usuario.foto_perfil;
+        } else {
+          // Si el usuario no tiene foto (se eliminó), usar imagen por defecto
+          this.userPhoto = this.obtenerFotoDefecto();
         }
       }
     });
