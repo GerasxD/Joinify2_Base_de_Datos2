@@ -1,14 +1,41 @@
-/* Animación de transición entre páginas */
+/* Contenedor de animaciones de rutas - ULTRA OPTIMIZADO + FOOTER FIJO */
 .route-anim-container {
 	position: relative;
-	min-height: 60vh;
-	margin-top: 100px; /* Espacio para el header fijo */
+	min-height: calc(100vh - 200px); /* Altura mínima para evitar que el footer suba */
+	margin-top: 100px; 
+	margin-bottom: 100px; /* Espacio reservado para el footer */
+	overflow: hidden; /* Previene el scroll horizontal durante las animaciones */
+	width: 100%;
+	
+	/* 🔒 MANTIENE LA ALTURA DURANTE ANIMACIONES */
+	height: auto;
+	display: block;
+	
+	/* 🚀 OPTIMIZACIONES DE RENDIMIENTO MÁXIMO */
+	will-change: transform; /* Prepara la GPU para animaciones */
+	contain: layout style paint; /* Aísla el contenedor para mejor rendimiento */
+	
+	/* Acelera las animaciones con GPU */
+	transform: translateZ(0);
+	-webkit-transform: translateZ(0);
+	
+	/* Previene el parpadeo */
+	backface-visibility: hidden;
+	-webkit-backface-visibility: hidden;
+	
+	/* Perspectiva optimizada */
+	perspective: 800px;
+	-webkit-perspective: 800px;
 }
 
-.route-anim-container > * {
-	animation: fadeSlideIn 0.5s cubic-bezier(.4,0,.2,1);
+/* 🔒 PREVENCIÓN ADICIONAL DE PROBLEMAS DE FOOTER */
+app-footer {
+	position: relative;
+	z-index: 1;
+	margin-top: auto;
 }
 
+/* Animación de respaldo para navegadores que no soporten Angular Animations */
 @keyframes fadeSlideIn {
 	from {
 		opacity: 0;
@@ -17,5 +44,12 @@
 	to {
 		opacity: 1;
 		transform: translateY(0) scale(1);
+	}
+}
+
+/* Mejoras de accesibilidad - reduce animaciones si el usuario lo prefiere */
+@media (prefers-reduced-motion: reduce) {
+	.route-anim-container > * {
+		animation: none !important;
 	}
 }

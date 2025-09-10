@@ -1,0 +1,199 @@
+<!-- Configuración de Usuario -->
+<div class="configuracion-container">
+  <!-- Header de la página -->
+  <div class="configuracion-header">
+    <div class="header-content">
+      <h1><i class="fas fa-user-cog"></i> Configuración de Perfil</h1>
+      <p>Gestiona tu información personal y preferencias de cuenta</p>
+    </div>
+  </div>
+
+  <!-- Contenido principal -->
+  <div class="configuracion-content">
+    
+    <!-- Sección de Foto de Perfil -->
+    <div class="seccion-card">
+      <div class="seccion-header">
+        <h2><i class="fas fa-camera"></i> Foto de Perfil</h2>
+      </div>
+      <div class="foto-perfil-container">
+        <div class="foto-actual">
+          <img [src]="obtenerUrlFoto()" [alt]="usuario?.nombre || 'Usuario'" class="avatar-grande">
+          <div class="foto-overlay" (click)="abrirSelectorArchivo()">
+            <i class="fas fa-camera"></i>
+            <span>Cambiar foto</span>
+          </div>
+        </div>
+        <div class="foto-acciones">
+          <input #fileInput type="file" accept="image/*" (change)="onSeleccionarArchivo($event)" style="display: none;">
+          <button class="btn-secondary" (click)="abrirSelectorArchivo()">
+            <i class="fas fa-upload"></i> Subir Nueva Foto
+          </button>
+          <button class="btn-danger" (click)="eliminarFoto()" *ngIf="usuario?.foto_perfil">
+            <i class="fas fa-trash"></i> Eliminar Foto
+          </button>
+        </div>
+        <div class="foto-info">
+          <small><i class="fas fa-info-circle"></i> Formatos permitidos: JPG, PNG, GIF. Tamaño máximo: 5MB</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sección de Información Personal -->
+    <div class="seccion-card">
+      <div class="seccion-header">
+        <h2><i class="fas fa-user"></i> Información Personal</h2>
+        <button class="btn-editar" (click)="toggleEditarPerfil()" [class.activo]="editandoPerfil">
+          <i class="fas" [class.fa-edit]="!editandoPerfil" [class.fa-times]="editandoPerfil"></i>
+          {{ editandoPerfil ? 'Cancelar' : 'Editar' }}
+        </button>
+      </div>
+
+      <form [formGroup]="perfilForm" (ngSubmit)="guardarPerfil()" class="perfil-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label><i class="fas fa-user"></i> Nombre</label>
+            <input type="text" formControlName="nombre" [readonly]="!editandoPerfil" 
+                   [class.readonly]="!editandoPerfil">
+          </div>
+          <div class="form-group">
+            <label><i class="fas fa-user"></i> Apellido</label>
+            <input type="text" formControlName="apellido" [readonly]="!editandoPerfil" 
+                   [class.readonly]="!editandoPerfil">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label><i class="fas fa-envelope"></i> Email</label>
+            <input type="email" formControlName="email" [readonly]="!editandoPerfil" 
+                   [class.readonly]="!editandoPerfil">
+          </div>
+          <div class="form-group">
+            <label><i class="fas fa-phone"></i> Teléfono</label>
+            <input type="tel" formControlName="telefono" [readonly]="!editandoPerfil" 
+                   [class.readonly]="!editandoPerfil" placeholder="Opcional">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label><i class="fas fa-calendar"></i> Fecha de Nacimiento</label>
+            <input type="date" formControlName="fecha_nacimiento" [readonly]="!editandoPerfil" 
+                   [class.readonly]="!editandoPerfil">
+          </div>
+          <div class="form-group">
+            <label><i class="fas fa-venus-mars"></i> Género</label>
+            <select formControlName="genero" [disabled]="!editandoPerfil" 
+                    [class.readonly]="!editandoPerfil">
+              <option value="">Seleccionar</option>
+              <option value="masculino">Masculino</option>
+              <option value="femenino">Femenino</option>
+              <option value="otro">Otro</option>
+              <option value="prefiero_no_decir">Prefiero no decir</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label><i class="fas fa-globe"></i> País</label>
+            <input type="text" formControlName="pais" [readonly]="!editandoPerfil" 
+                   [class.readonly]="!editandoPerfil" placeholder="Opcional">
+          </div>
+          <div class="form-group">
+            <label><i class="fas fa-city"></i> Ciudad</label>
+            <input type="text" formControlName="ciudad" [readonly]="!editandoPerfil" 
+                   [class.readonly]="!editandoPerfil" placeholder="Opcional">
+          </div>
+        </div>
+
+        <div class="form-actions" *ngIf="editandoPerfil">
+          <button type="submit" class="btn-primary" [disabled]="!perfilForm.valid">
+            <i class="fas fa-save"></i>
+            Guardar Cambios
+          </button>
+          <button type="button" class="btn-secondary" (click)="cancelarEdicion()">
+            <i class="fas fa-times"></i> Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Sección de Cambio de Contraseña -->
+    <div class="seccion-card">
+      <div class="seccion-header">
+        <h2><i class="fas fa-lock"></i> Seguridad</h2>
+        <button class="btn-editar" (click)="toggleCambiarPassword()" [class.activo]="cambiandoPassword">
+          <i class="fas" [class.fa-key]="!cambiandoPassword" [class.fa-times]="cambiandoPassword"></i>
+          {{ cambiandoPassword ? 'Cancelar' : 'Cambiar Contraseña' }}
+        </button>
+      </div>
+
+      <form [formGroup]="passwordForm" (ngSubmit)="cambiarPassword()" class="password-form" *ngIf="cambiandoPassword">
+        <div class="form-group">
+          <label><i class="fas fa-lock"></i> Contraseña Actual</label>
+          <div class="password-input">
+            <input type="password" 
+                   formControlName="passwordActual" placeholder="Ingresa tu contraseña actual">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label><i class="fas fa-key"></i> Nueva Contraseña</label>
+          <div class="password-input">
+            <input type="password" 
+                   formControlName="nuevaPassword" placeholder="Mínimo 8 caracteres">
+          </div>
+          <div class="password-strength" *ngIf="passwordForm.get('nuevaPassword')?.value">
+            <div class="strength-bar" [class]="obtenerFuerzaPassword()">
+              <div class="strength-fill"></div>
+            </div>
+            <span class="strength-text">{{ obtenerTextoFuerza() }}</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label><i class="fas fa-check"></i> Confirmar Nueva Contraseña</label>
+          <div class="password-input">
+            <input type="password" 
+                   formControlName="confirmarPassword" placeholder="Repite la nueva contraseña">
+          </div>
+          <div class="error-message" *ngIf="passwordForm.get('confirmarPassword')?.value !== passwordForm.get('nuevaPassword')?.value && passwordForm.get('confirmarPassword')?.touched">
+            <i class="fas fa-exclamation-triangle"></i> Las contraseñas no coinciden
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" [disabled]="!passwordForm.valid">
+            <i class="fas fa-key"></i>
+            Cambiar Contraseña
+          </button>
+          <button type="button" class="btn-secondary" (click)="cancelarCambioPassword()">
+            <i class="fas fa-times"></i> Cancelar
+          </button>
+        </div>
+      </form>
+
+      <div class="seguridad-info" *ngIf="!cambiandoPassword">
+        <div class="info-item">
+          <i class="fas fa-shield-alt"></i>
+          <div>
+            <strong>Cuenta Segura</strong>
+            <p>Tu cuenta está protegida. Cambia tu contraseña regularmente para mayor seguridad.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mensajes de notificación -->
+<div class="mensaje-notificacion" [class]="tipoMensaje" *ngIf="mostrandoMensaje">
+  <i class="fas" [class.fa-check-circle]="tipoMensaje === 'exito'" 
+     [class.fa-exclamation-triangle]="tipoMensaje === 'error'"></i>
+  <span>{{ textoMensaje }}</span>
+  <button (click)="cerrarMensaje()">
+    <i class="fas fa-times"></i>
+  </button>
+</div>

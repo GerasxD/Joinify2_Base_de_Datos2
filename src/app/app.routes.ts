@@ -5,20 +5,21 @@ import { FeaturesComponent } from './features/features.component';
 import { ContactComponent } from './contact/contact.component';
 import { LoginComponent } from './login/login.component';
 import { RegisterComponent } from './register/register.component';
-import { Component } from '@angular/core';
 import { CreaciongrupoComponent } from './creaciongrupo/creaciongrupo.component';
 import { MisGruposComponent } from './misgrupos/misgrupos.component';
 import { UnirGrupoComponent } from './unirgrupo/unirgrupo.component';
+import { ConfiguracionComponent } from './configuracion/configuracion.component';
 
 export const routes: Routes = [
     {path: '', redirectTo: '/home', pathMatch: 'full'},
-    { path: 'home', component: HomeComponent },
-    { path: 'about', component: AboutComponent },
-    { path: 'features', component: FeaturesComponent},
-    { path: 'contact', component: ContactComponent },
-    { path: 'login', component: LoginComponent},
-    { path: 'register', component: RegisterComponent},
-    { path: 'crear-grupo', component: CreaciongrupoComponent},
-    { path: 'mis-grupos', component: MisGruposComponent},
-    { path: 'unir-grupo', component: UnirGrupoComponent}
+    { path: 'home', component: HomeComponent, data: { animation: 'home' } },
+    { path: 'about', component: AboutComponent, data: { animation: 'about' } },
+    { path: 'features', component: FeaturesComponent, data: { animation: 'features' } },
+    { path: 'contact', component: ContactComponent, data: { animation: 'contact' } },
+    { path: 'login', component: LoginComponent, data: { animation: 'login' } },
+    { path: 'register', component: RegisterComponent, data: { animation: 'register' } },
+    { path: 'crear-grupo', component: CreaciongrupoComponent, data: { animation: 'crear-grupo' } },
+    { path: 'mis-grupos', component: MisGruposComponent, data: { animation: 'mis-grupos' } },
+    { path: 'unir-grupo', component: UnirGrupoComponent, data: { animation: 'unir-grupo' } },
+    { path: 'configuracion', component: ConfiguracionComponent, data: { animation: 'configuracion' } }
 ];
