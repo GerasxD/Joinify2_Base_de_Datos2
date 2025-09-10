@@ -2,7 +2,7 @@
 <app-header></app-header>
 
 <!-- Animación de transición entre páginas -->
-<div class="route-anim-container">
+<main class="route-anim-container" [@routeAnimations]="getRouteAnimationData()">
 	<router-outlet></router-outlet>
-</div>
+</main>
 <app-footer></app-footer>

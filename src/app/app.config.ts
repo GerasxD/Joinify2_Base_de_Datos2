@@ -2,18 +2,20 @@ import { ApplicationConfig, provideZoneChangeDetection, LOCALE_ID } from '@angul
 import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { provideHttpClient } from '@angular/common/http';
+import { provideAnimations } from '@angular/platform-browser/animations';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
     provideHttpClient(),
+    provideAnimations(), // Habilita las animaciones de Angular
     { provide: LOCALE_ID, useValue: 'es-MX' }
   ]
 };
 
 // Configuración global de la API
 export const environment = {
-  apiUrl: 'http://172.16.1.156:3001' 
+  apiUrl: 'http://172.16.129.183:3001' 
 };
 
