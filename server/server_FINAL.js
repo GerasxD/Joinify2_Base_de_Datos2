@@ -6,6 +6,37 @@ const cors = require('cors');
 const Stripe = require('stripe');
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
+const crypto = require('crypto'); // <-- Agregado
+
+/* Usa una clave de 32 bytes. Mueve esto a tu .env (CREDS_SECRET) */
+const CREDS_SECRET = process.env.CREDS_SECRET || 'cambia_esta_clave_super_secreta_y_larga';
+
+function getKey() {
+  // Deriva 32 bytes a partir de la clave (evita usar la clave "en crudo")
+  return crypto.createHash('sha256').update(String(CREDS_SECRET)).digest();
+}
+
+function encryptText(plain) {
+  if (!plain) return null;
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', getKey(), iv);
+  const encrypted = Buffer.concat([cipher.update(String(plain), 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  // Guarda todo en un solo campo: iv:ciphertext:tag (hex)
+  return `${iv.toString('hex')}:${encrypted.toString('hex')}:${tag.toString('hex')}`;
+}
+
+function decryptText(payload) {
+  if (!payload) return null;
+  const [ivHex, encHex, tagHex] = String(payload).split(':');
+  const iv = Buffer.from(ivHex, 'hex');
+  const encrypted = Buffer.from(encHex, 'hex');
+  const tag = Buffer.from(tagHex, 'hex');
+  const decipher = crypto.createDecipheriv('aes-256-gcm', getKey(), iv);
+  decipher.setAuthTag(tag);
+  const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
+  return decrypted.toString('utf8');
+}
 
 // Configurar conexión a MySQL
 const pool = mysql.createPool({
@@ -18,10 +49,31 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+// Configura Stripe con manejo de errores
+let stripe;
+try {
+    if (!process.env.STRIPE_SECRET_KEY) {
+        console.warn('⚠️ No se encontró STRIPE_SECRET_KEY. Los pagos no funcionarán.');
+        stripe = {
+            paymentIntents: {
+                create: () => Promise.reject(new Error('Stripe no está configurado'))
+            }
+        };
+    } else {
+        stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+    }
+} catch (error) {
+    console.error('Error al inicializar Stripe:', error);
+    process.exit(1);
+}
+
 const secretKey = 'mi_clave_secreta_12345_ghjlo_hyt';
 
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:4200', // URL de tu aplicación Angular
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true
+}));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
@@ -90,28 +142,37 @@ app.post('/login', async (req, res) => {
 });
 
 app.post('/api/grupos/crear', async (req, res) => {
-    const { name, serviceType, maxUsers, costPerUser, paymentPolicy, userId } = req.body;
-    if (!name || !serviceType || !maxUsers || !costPerUser || !userId) {
+    const { name, serviceType, maxUsers, costPerUser, paymentPolicy, userId, accountEmail, accountPassword } = req.body;
+
+    if (!name || !serviceType || !maxUsers || !costPerUser || !userId || !accountEmail || !accountPassword) {
         return res.status(400).json({ message: 'Todos los campos son obligatorios' });
     }
+
     try {
-        const [servicio] = await pool.query('SELECT id_servicio, nombre_servicio FROM servicio_streaming WHERE nombre_servicio = ?', [serviceType]);
+        const [servicio] = await pool.query(
+            'SELECT id_servicio, nombre_servicio FROM servicio_streaming WHERE nombre_servicio = ?',
+            [serviceType]
+        );
         if (servicio.length === 0) return res.status(400).json({ message: 'Servicio no encontrado' });
 
         const id_servicio = servicio[0].id_servicio;
-        const nombre_servicio = servicio[0].nombre_servicio;
         const fecha_creacion = new Date();
         const fecha_inicio = new Date();
         const fecha_vencimiento = new Date();
-        fecha_vencimiento.setMonth(fecha_inicio.getMonth() + (paymentPolicy === 'annual' ? 12 : 1));
+        fecha_vencimiento.setMonth(
+            fecha_inicio.getMonth() + (paymentPolicy === 'annual' ? 12 : 1)
+        );
         const costo_total = costPerUser * maxUsers;
 
+        const encryptedPass = encryptText(accountPassword);
+
         const [result] = await pool.query(
-            `INSERT INTO grupo_suscripcion 
-            (nombre_grupo, fecha_creacion, estado_grupo, num_integrantes, id_servicio, costo_total, fecha_inicio, fecha_vencimiento, id_creador)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [name, fecha_creacion, 'Activo', maxUsers, id_servicio, costo_total, fecha_inicio, fecha_vencimiento, userId]
+            `INSERT INTO grupo_suscripcion
+             (nombre_grupo, fecha_creacion, estado_grupo, num_integrantes, id_servicio, costo_total, fecha_inicio, fecha_vencimiento, id_creador, correo_cuenta, contrasena_cuenta)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [name, fecha_creacion, 'Activo', maxUsers, id_servicio, costo_total, fecha_inicio, fecha_vencimiento, userId, accountEmail, encryptedPass]
         );
+
         const id_grupo_suscripcion = result.insertId;
 
         await pool.query(
@@ -121,25 +182,55 @@ app.post('/api/grupos/crear', async (req, res) => {
 
         res.status(201).json({ message: 'Grupo creado exitosamente', id_grupo_suscripcion });
     } catch (err) {
+        console.error(err);
         res.status(500).json({ message: 'Error al crear el grupo' });
     }
 });
 
 app.get('/api/grupos/usuario', async (req, res) => {
-    const id_usuario = req.query.id_usuario;
-    if (!id_usuario) return res.status(400).json({ error: 'ID de usuario no proporcionado' });
-    try {
-        const [grupos] = await pool.query(`
-            SELECT gs.*, ug.rol, ss.nombre_servicio,
-            (SELECT COUNT(*) FROM usuario_grupo ug2 WHERE ug2.id_grupo_suscripcion = gs.id_grupo_suscripcion) AS currentUsers
-            FROM grupo_suscripcion gs
-            JOIN usuario_grupo ug ON gs.id_grupo_suscripcion = ug.id_grupo_suscripcion
-            JOIN servicio_streaming ss ON gs.id_servicio = ss.id_servicio
-            WHERE ug.id_usuario = ?`, [id_usuario]);
-        res.json(grupos);
-    } catch (err) {
-        res.status(500).json({ message: 'Error al procesar la solicitud' });
-    }
+  const id_usuario = req.query.id_usuario;
+  if (!id_usuario) return res.status(400).json({ error: 'ID de usuario no proporcionado' });
+
+  try {
+    // First, get all groups for the user
+    const [grupos] = await pool.query(`
+      SELECT gs.*, ug.rol, ss.nombre_servicio,
+             (SELECT COUNT(*) FROM usuario_grupo ug2 
+              WHERE ug2.id_grupo_suscripcion = gs.id_grupo_suscripcion) AS currentUsers
+      FROM grupo_suscripcion gs
+      JOIN usuario_grupo ug ON gs.id_grupo_suscripcion = ug.id_grupo_suscripcion
+      JOIN servicio_streaming ss ON gs.id_servicio = ss.id_servicio
+      WHERE ug.id_usuario = ?`, [id_usuario]);
+
+    // Process each group to handle password visibility
+    const gruposConCredenciales = await Promise.all(grupos.map(async grupo => {
+      let mostrarPassword = false;
+
+      // Check if user is creator
+      if (grupo.id_creador === Number(id_usuario)) {
+        mostrarPassword = true;
+      } else {
+        // Check if user has made payments
+        const [pagos] = await pool.query(
+          `SELECT 1 FROM historial_pagos hp 
+           JOIN pago p ON hp.id_pago = p.id_pago 
+           WHERE hp.id_grupo_suscripcion = ? AND p.id_usuario = ? LIMIT 1`,
+          [grupo.id_grupo_suscripcion, id_usuario]
+        );
+        if (pagos.length > 0) mostrarPassword = true;
+      }
+
+      return {
+        ...grupo,
+        contrasena_cuenta: mostrarPassword ? decryptText(grupo.contrasena_cuenta) : 'No disponible'
+      };
+    }));
+
+    res.json(gruposConCredenciales);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Error al procesar la solicitud' });
+  }
 });
 
 app.post('/api/grupos/unirse', async (req, res) => {
@@ -436,6 +527,39 @@ app.delete('/api/grupos/baja/:groupId', async (req, res) => {
     } catch (err) {
         res.status(500).json({ message: 'Error al procesar la solicitud' });
     }
+});
+
+app.get('/api/grupos/:groupId/credenciales', async (req, res) => {
+  const { groupId } = req.params;
+  const { userId } = req.query; // pásalo como query: ?userId=123
+
+  if (!groupId || !userId) {
+    return res.status(400).json({ message: 'groupId y userId son obligatorios' });
+  }
+
+  try {
+    // Verifica que el usuario sea miembro del grupo
+    const [m] = await pool.query(
+      'SELECT 1 FROM usuario_grupo WHERE id_usuario = ? AND id_grupo_suscripcion = ? LIMIT 1',
+      [userId, groupId]
+    );
+    if (m.length === 0) return res.status(403).json({ message: 'No autorizado' });
+
+    // Obtén credenciales
+    const [rows] = await pool.query(
+      'SELECT correo_cuenta, contrasena_cuenta FROM grupo_suscripcion WHERE id_grupo_suscripcion = ?',
+      [groupId]
+    );
+    if (rows.length === 0) return res.status(404).json({ message: 'Grupo no encontrado' });
+
+    const correo = rows[0].correo_cuenta || null;
+    const password = rows[0].contrasena_cuenta ? decryptText(rows[0].contrasena_cuenta) : null;
+
+    res.json({ correoCuenta: correo, passwordCuenta: password });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Error al obtener credenciales' });
+  }
 });
 
 // ✅ Iniciar servidor
