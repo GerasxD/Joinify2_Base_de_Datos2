@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { environment } from '../app.config';
+import { SweetAlertService } from '../services/sweet-alert.service';
 
 @Component({
   selector: 'app-creaciongrupo',
@@ -22,7 +23,11 @@ export class CreaciongrupoComponent {
 
   serviceList: any[] = [];
 
-  constructor(private http: HttpClient, private router: Router) {
+  constructor(
+    private http: HttpClient, 
+    private router: Router,
+    private sweetAlert: SweetAlertService
+  ) {
     this.loadServices();
   }
 
@@ -38,13 +43,13 @@ export class CreaciongrupoComponent {
 
   onSubmit() {
     if (!this.groupData.name || !this.groupData.serviceType || !this.groupData.maxUsers || !this.groupData.costPerUser) {
-      alert('Por favor, completa todos los campos.');
+      this.sweetAlert.warning('Campos incompletos', 'Por favor, completa todos los campos.');
       return;
     }
 
     const userId = localStorage.getItem('userId');
     if (!userId) {
-      alert('No se puede crear el grupo. El usuario no está logueado.');
+      this.sweetAlert.error('No autorizado', 'No se puede crear el grupo. Debes iniciar sesión.');
       return;
     }
 
@@ -62,11 +67,12 @@ export class CreaciongrupoComponent {
 
       .subscribe(
         (response) => {
-          alert('Grupo creado exitosamente');
-          this.router.navigate(['/unirgrupo']);
+          this.sweetAlert.success('¡Éxito!', 'Grupo creado exitosamente').then(() => {
+            this.router.navigate(['/unirgrupo']);
+          });
         },
         (error) => {
-          alert('Hubo un error al crear el grupo.');
+          this.sweetAlert.error('Error', 'Hubo un error al crear el grupo.');
           console.error('Error:', error);
         }
       );
