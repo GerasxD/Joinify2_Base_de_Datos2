@@ -5,6 +5,12 @@ import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { environment } from '../app.config';
 
+interface Servicio {
+  id: number;
+  nombre_servicio: string; // <- nombrado como aparece en plantilla
+  // ...otros campos si aplica
+}
+
 @Component({
   selector: 'app-creaciongrupo',
   standalone: true,
@@ -33,11 +39,13 @@ export class CreaciongrupoComponent implements OnInit {
 
   showPass = false; // para alternar visibilidad
   serviceList: Servicio[] = [];
-
-  constructor(private http: HttpClient, private router: Router) {}
+  sweetAlert: any;
 
   constructor(private http: HttpClient, private router: Router) {
     this.loadServices();
+  }
+  ngOnInit(): void {
+    throw new Error('Method not implemented.');
   }
 
   loadServices() {
@@ -66,11 +74,11 @@ export class CreaciongrupoComponent implements OnInit {
       alert('Por favor, completa todos los campos.');
       return;
     }
-    if (!this.isValidEmail(accountEmail)) {
+    if (!this.isValidEmail(this.groupData.accountEmail)) {
       alert('Ingresa un correo válido para la cuenta del servicio.');
       return;
     }
-    if (String(accountPassword).length < 6) {
+    if (String(this.groupData.accountPassword).length < 6) {
       alert('La contraseña de la cuenta debe tener al menos 6 caracteres.');
       return;
     }
@@ -82,17 +90,17 @@ export class CreaciongrupoComponent implements OnInit {
     }
 
     const payload = {
-      name,
-      serviceType,
-      maxUsers,
-      costPerUser: Number(costPerUser) || 0,
-      paymentPolicy,
+      name: this.groupData.name,
+      serviceType: this.groupData.serviceType,
+      maxUsers: this.groupData.maxUsers,
+      costPerUser: Number(this.groupData.costPerUser) || 0,
+      paymentPolicy: this.groupData.paymentPolicy,
       userId: parseInt(userId, 10),
-      accountEmail,
-      accountPassword
+      accountEmail: this.groupData.accountEmail,
+      accountPassword: this.groupData.accountPassword
     };
 
-    this.http.post<{ id_grupo_suscripcion: number }>(`${environment.apiUrl}/api/grupos/crear`, grupoConUsuario)
+    this.http.post<{ id_grupo_suscripcion: number }>(`${environment.apiUrl}/api/grupos/crear`, payload)
 
       .subscribe(
         (response) => {

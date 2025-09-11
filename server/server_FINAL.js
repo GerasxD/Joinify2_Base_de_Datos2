@@ -7,6 +7,34 @@ const Stripe = require('stripe');
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
 
+// Añadir multer y fs para manejar subidas de archivos
+const fs = require('fs');
+const path = require('path');        // <<< añadir
+const multer = require('multer');
+
+// Asegurar que exista la carpeta uploads y uploads/profiles
+const uploadsDir = path.join(__dirname, 'uploads');
+const profilesDir = path.join(uploadsDir, 'profiles');
+
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+if (!fs.existsSync(profilesDir)) {
+  fs.mkdirSync(profilesDir, { recursive: true });
+}
+
+// Configuración de almacenamiento de multer
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadsDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + '-' + file.originalname);
+  }
+});
+const upload = multer({ storage });
+
 // Configurar conexión a MySQL
 const pool = mysql.createPool({
     host: 'localhost',
@@ -46,35 +74,6 @@ app.use(cors({
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Configurar multer para subida de archivos
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        const uploadDir = path.join(__dirname, 'uploads/profiles');
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        cb(null, uploadDir);
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'profile-' + uniqueSuffix + path.extname(file.originalname));
-    }
-});
-
-const upload = multer({
-    storage: storage,
-    limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB máximo
-    },
-    fileFilter: (req, file, cb) => {
-        if (file.mimetype.startsWith('image/')) {
-            cb(null, true);
-        } else {
-            cb(new Error('Solo se permiten archivos de imagen'), false);
-        }
-    }
-});
-
 // Servir archivos estáticos de perfiles
 app.use('/uploads/profiles', express.static(path.join(__dirname, 'uploads/profiles')));
 
@@ -111,17 +110,27 @@ app.get('/usuarios', async (req, res) => {
 });
 
 app.post('/usuario', async (req, res) => {
-    const { nombre, email, password } = req.body;
-    try {
-        const hashedPassword = await encryptPassword(password);
-        const [result] = await pool.query(
-            'INSERT INTO usuario (nombre, email, contraseña, fecha_registro) VALUES (?, ?, ?, ?)',
-            [nombre, email, hashedPassword, new Date()]
-        );
-        res.status(201).json({ message: 'Usuario creado correctamente' });
-    } catch (err) {
-        res.status(500).json({ message: 'Error al crear el usuario' });
+  console.log('[POST /usuario] body:', req.body); // << logging request
+  const { nombre, email, password } = req.body;
+  if (!nombre || !email || !password) {
+    return res.status(400).json({ message: 'Faltan campos obligatorios' });
+  }
+  try {
+    const hashedPassword = await encryptPassword(password);
+    const [result] = await pool.query(
+      'INSERT INTO usuario (nombre, email, contraseña, fecha_registro) VALUES (?, ?, ?, ?)',
+      [nombre, email, hashedPassword, new Date()]
+    );
+    console.log('[POST /usuario] insertId:', result.insertId);
+    res.status(201).json({ message: 'Usuario creado correctamente', id: result.insertId });
+  } catch (err) {
+    console.error('[POST /usuario] error:', err);
+    // Manejo común: email duplicado
+    if (err && err.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ message: 'El correo ya está registrado' });
     }
+    res.status(500).json({ message: 'Error al crear el usuario', detail: err.message || err });
+  }
 });
 
 app.post('/login', async (req, res) => {
@@ -675,6 +684,18 @@ app.get('/api/grupos/:groupId/credenciales', async (req, res) => {
     res.status(500).json({ message: 'Error al obtener credenciales' });
   }
 });
+
+// Test de conexión a MySQL al arrancar
+(async () => {
+  try {
+    const conn = await pool.getConnection();
+    await conn.query('SELECT 1');
+    conn.release();
+    console.log('MySQL: conexión OK');
+  } catch (err) {
+    console.error('MySQL: error de conexión inicial:', err.message || err);
+  }
+})();
 
 // ✅ Iniciar servidor
 app.listen(3001, '0.0.0.0', () => {

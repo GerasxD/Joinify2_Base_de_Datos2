@@ -7,7 +7,8 @@ import { UsuarioService } from '../services/usuario.service';
 
 @Component({
   selector: 'app-header',
-  imports: [RouterModule, DatePipe],
+  standalone: true,
+  imports: [RouterModule],
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.css']
 })

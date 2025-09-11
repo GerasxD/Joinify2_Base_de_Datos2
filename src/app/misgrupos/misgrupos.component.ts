@@ -5,6 +5,26 @@ import { HistorialPago } from '../models/historial-pago.model';
 import { HistorialPagosService } from '../services/historial-pagos.service';
 import { CommonModule } from '@angular/common';
 import { environment } from '../app.config';
+import { SweetAlertService } from '../services/sweet-alert.service';
+import { RouterModule } from '@angular/router';
+
+// Define Grupo interface if not already imported
+export interface Grupo {
+  id: number;
+  name: string;
+  serviceType: string;
+  maxUsers: number;
+  currentUsers: number;
+  costPerUser: number;
+  paymentPolicy: string;
+  fechaLimite: string;
+  rol: string;
+  isCreatedByUser: boolean;
+  isJoinedByUser: boolean;
+  estado_grupo: string;
+  correo_cuenta: string;
+  contrasena_cuenta: string;
+}
 
 
 @Component({
@@ -29,7 +49,7 @@ export class MisGruposComponent implements OnInit, OnDestroy {
   pagosError = '';
 today: any;
   // Add the trackBy function (remove it from the interface declaration)
-  trackGrupoById: TrackByFunction<Grupo> = (index: number, grupo: Grupo) => {
+  trackGrupoById: TrackByFunction<Grupo> = (_index: number, grupo: Grupo) => {
     return grupo.id;
   };
 
