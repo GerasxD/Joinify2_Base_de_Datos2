@@ -3,7 +3,7 @@
 	position: relative;
 	min-height: calc(100vh - 200px); /* Altura mínima para evitar que el footer suba */
 	margin-top: 100px; 
-	margin-bottom: 100px; /* Espacio reservado para el footer */
+	
 	overflow: hidden; /* Previene el scroll horizontal durante las animaciones */
 	width: 100%;
 	
