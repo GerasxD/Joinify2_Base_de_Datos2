@@ -68,7 +68,7 @@ try {
 const secretKey = 'mi_clave_secreta_12345_ghjlo_hyt';
 
 app.use(cors({
-    origin: 'http://localhost:4200', // URL de tu aplicación Angular
+    origin: ['http://localhost:4200', 'http://localhost:4201'], // URL de tu aplicación Angular
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true
 }));
