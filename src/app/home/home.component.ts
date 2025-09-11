@@ -9,9 +9,13 @@ import { RouterModule } from '@angular/router';
   styleUrl: './home.component.css'
 })
 export class HomeComponent implements OnInit {
+onImageError($event: ErrorEvent) {
+throw new Error('Method not implemented.');
+}
   movies: any[] = []; // Array para almacenar las películas
   apiKey: string = '5c208ff4ecedc410685c70b86d4abcd9'; 
   apiUrl: string = 'https://api.themoviedb.org/3/movie/popular'; // Endpoint de TMDB
+isLoadingMovies: any;
 
   constructor(private http: HttpClient) {}
 
