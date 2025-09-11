@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { UsuarioService } from '../services/usuario.service';
 import { Usuario } from '../models/usuario.model';
+import { SweetAlertService } from '../services/sweet-alert.service';
 
 @Component({
   selector: 'app-configuracion',
@@ -30,7 +31,8 @@ export class ConfiguracionComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
-    private usuarioService: UsuarioService
+    private usuarioService: UsuarioService,
+    private sweetAlert: SweetAlertService
   ) {
     this.perfilForm = this.fb.group({
       nombre: ['', [Validators.required, Validators.minLength(2)]],
@@ -230,8 +232,12 @@ export class ConfiguracionComponent implements OnInit {
   eliminarFoto() {
     if (!this.usuario?.id_usuario) return;
 
-    if (confirm('¿Estás seguro de que quieres eliminar tu foto de perfil?')) {
-      this.usuarioService.eliminarFotoPerfil(this.usuario.id_usuario).subscribe({
+    this.sweetAlert.confirmDelete(
+      '¿Eliminar foto de perfil?', 
+      'Esta acción eliminará tu foto de perfil actual'
+    ).then((result) => {
+      if (result.isConfirmed && this.usuario?.id_usuario) {
+        this.usuarioService.eliminarFotoPerfil(this.usuario.id_usuario).subscribe({
         next: () => {
           if (this.usuario) {
             // Eliminar la foto del objeto usuario local
@@ -260,8 +266,9 @@ export class ConfiguracionComponent implements OnInit {
           console.error('Error al eliminar foto:', error);
           this.mostrarNotificacion('Error al eliminar la foto', 'error');
         }
-      });
-    }
+        });
+      }
+    });
   }
 
   // === GESTIÓN DE PERFIL ===
