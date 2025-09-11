@@ -5,7 +5,8 @@ import { RouterModule, RouterOutlet } from '@angular/router';
   selector: 'app-contact',
   imports: [RouterModule],
   templateUrl: './contact.component.html',
-  styleUrl: './contact.component.css'
+  styleUrls: ['./contact.component.css'],
+  standalone: true,
 })
 export class ContactComponent {
 
