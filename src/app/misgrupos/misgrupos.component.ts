@@ -4,26 +4,8 @@ import { loadStripe } from '@stripe/stripe-js';
 import { HistorialPago } from '../models/historial-pago.model';
 import { HistorialPagosService } from '../services/historial-pagos.service';
 import { CommonModule } from '@angular/common';
-import { environment } from '../../environments/environment'; // use centralized env file
-import { RouterModule } from '@angular/router';
+import { environment } from '../app.config';
 
-
-interface Grupo {
-isCreatedByUser: any;
-  id: number;
-  name: string;
-  serviceType: string;
-  maxUsers: number;
-  currentUsers: number;
-  costPerUser: number;  // Cambiado a number
-  paymentPolicy: 'monthly' | 'annual';
-  fechaLimite: string;
-  rol: string;
-  isJoinedByUser: boolean;
-  estado_grupo: string;
-  correo_cuenta: string;
-  contrasena_cuenta: string;
-}
 
 @Component({
   selector: 'app-misgrupos',
@@ -54,7 +36,8 @@ today: any;
 
   constructor(
     private http: HttpClient,
-    private historialSrv: HistorialPagosService
+    private historialSrv: HistorialPagosService,
+    private sweetAlert: SweetAlertService
   ) {}
 
   ngOnInit(): void {
@@ -187,7 +170,7 @@ today: any;
   simularPago(grupoId: number, monto: number): void {
     const userId = localStorage.getItem('userId');
     if (!userId) {
-      alert('No se ha encontrado un usuario logueado.');
+      this.sweetAlert.error('No autorizado', 'No se ha encontrado un usuario logueado.');
       return;
     }
 
@@ -207,7 +190,7 @@ today: any;
       },
       (error) => { 
         console.error('Error en la simulación de pago:', error);
-        alert('Hubo un problema al procesar la simulación. Inténtalo de nuevo.');
+        this.sweetAlert.error('Error de pago', 'Hubo un problema al procesar la simulación. Inténtalo de nuevo.');
       }
     );
   }
@@ -230,7 +213,7 @@ today: any;
       this.isProcessingPayment = false;
       if (result.error) {
         console.error('Error al procesar el pago:', result.error);
-        alert('Hubo un error en el pago. Inténtalo de nuevo.');
+        this.sweetAlert.error('Error de pago', 'Hubo un error en el pago. Inténtalo de nuevo.');
       } else {
         if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
           const userId = localStorage.getItem('userId');
@@ -240,11 +223,11 @@ today: any;
             monto: monto
           }).subscribe(
             (response) => {
-              alert('¡Pago registrado con éxito!');
+              this.sweetAlert.success('¡Pago exitoso!', 'El pago ha sido registrado correctamente.');
             },
             (error) => {
               console.error('Error al registrar el pago:', error);
-              alert('El pago fue procesado, pero hubo un problema al registrarlo.');
+              this.sweetAlert.warning('Pago procesado', 'El pago fue procesado, pero hubo un problema al registrarlo.');
             }
           );
         }
@@ -253,40 +236,40 @@ today: any;
   }
 
   darDeBajaGrupo(grupoId: number): void {
-    const confirmacion = confirm('¿Estás seguro de que deseas dar de baja este grupo? Esta acción es irreversible.');
-
-
-    if (!confirmacion) return;
-
-    this.http.delete<any>(`${environment.apiUrl}/api/grupos/baja/${grupoId}`)
-
-      .subscribe(
-        response => {
-          alert(`El grupo ha sido dado de baja. La página se recargará en 3 segundos.`);
-          setTimeout(() => {
-            window.location.reload();
-          }, 3000);
-        },
-        error => {
-          console.error('Error al dar de baja el grupo:', error);
-          alert('Error al dar de baja el grupo: ' + error.error.message);
-        }
-      );
+    this.sweetAlert.confirmDelete(
+      '¿Dar de baja grupo?',
+      'Esta acción es irreversible. ¿Estás seguro de que deseas continuar?'
+    ).then((result) => {
+      if (result.isConfirmed) {
+        this.http.delete<any>(`${environment.apiUrl}/api/grupos/baja/${grupoId}`)
+          .subscribe(
+            response => {
+              this.sweetAlert.success('Grupo dado de baja', 'El grupo ha sido dado de baja correctamente').then(() => {
+                setTimeout(() => {
+                  window.location.reload();
+                }, 1000);
+              });
+            },
+            error => {
+              console.error('Error al dar de baja el grupo:', error);
+              this.sweetAlert.error('Error', 'Error al dar de baja el grupo: ' + error.error.message);
+            }
+          );
+      }
+    });
   }
 
   salirDelGrupo(grupoId: number): void {
     const userId = localStorage.getItem('userId');
     if (!userId) {
-      alert('Debes iniciar sesión para salir de un grupo');
+      this.sweetAlert.warning('No autorizado', 'Debes iniciar sesión para salir de un grupo');
       return;
     }
 
-
     this.http.delete<any>(`${environment.apiUrl}/api/grupos/salir/${grupoId}/${userId}`)
-
       .subscribe(
         response => {
-          alert('Has salido del grupo exitosamente');
+          this.sweetAlert.success('¡Éxito!', 'Has salido del grupo exitosamente');
           // this.actualizarDisponibilidad(grupoId);
           setTimeout(() => {
             window.location.reload();
@@ -294,7 +277,7 @@ today: any;
         },
         error => {
           console.error('Error al salir del grupo:', error);
-          alert('No se pudo salir del grupo: ' + error.error.message);
+          this.sweetAlert.error('Error', 'No se pudo salir del grupo: ' + error.error.message);
         }
       );
   }
@@ -321,34 +304,45 @@ today: any;
   }
 
   inactivarGrupo(grupoId: number): void {
-    if (!confirm('¿Seguro que deseas inactivar este grupo?')) return;
-
-    this.http.put<any>(`${environment.apiUrl}/api/grupos/inactivar/${grupoId}`, {})
-      .subscribe(
-        response => {
-          alert('Grupo inactivado correctamente');
-          window.location.reload();
-        },
-        error => {
-          alert('Error al inactivar el grupo');
-        }
-      );
+    this.sweetAlert.confirm(
+      '¿Inactivar grupo?',
+      '¿Estás seguro que deseas inactivar este grupo?'
+    ).then((result) => {
+      if (result.isConfirmed) {
+        this.http.put<any>(`${environment.apiUrl}/api/grupos/inactivar/${grupoId}`, {})
+          .subscribe(
+            response => {
+              this.sweetAlert.success('¡Éxito!', 'Grupo inactivado correctamente').then(() => {
+                window.location.reload();
+              });
+            },
+            error => {
+              this.sweetAlert.error('Error', 'Error al inactivar el grupo');
+            }
+          );
+      }
+    });
   }
 
   activarGrupo(grupoId: number): void {
-    if (!confirm('¿Seguro que deseas activar este grupo?')) return;
-
-    this.http.put<any>(`${environment.apiUrl}/api/grupos/activar/${grupoId}`, {})
-
-      .subscribe(
-        response => {
-          alert('Grupo activado correctamente');
-          window.location.reload();
-        },
-        error => {
-          alert('Error al activar el grupo');
-        }
-      );
+    this.sweetAlert.confirm(
+      '¿Activar grupo?',
+      '¿Estás seguro que deseas activar este grupo?'
+    ).then((result) => {
+      if (result.isConfirmed) {
+        this.http.put<any>(`${environment.apiUrl}/api/grupos/activar/${grupoId}`, {})
+          .subscribe(
+            response => {
+              this.sweetAlert.success('¡Éxito!', 'Grupo activado correctamente').then(() => {
+                window.location.reload();
+              });
+            },
+            error => {
+              this.sweetAlert.error('Error', 'Error al activar el grupo');
+            }
+          );
+      }
+    });
   }
 
   showPassword: { [key: number]: boolean } = {};

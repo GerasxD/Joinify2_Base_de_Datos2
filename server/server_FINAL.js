@@ -6,37 +6,6 @@ const cors = require('cors');
 const Stripe = require('stripe');
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
-const crypto = require('crypto'); // <-- Agregado
-
-/* Usa una clave de 32 bytes. Mueve esto a tu .env (CREDS_SECRET) */
-const CREDS_SECRET = process.env.CREDS_SECRET || 'cambia_esta_clave_super_secreta_y_larga';
-
-function getKey() {
-  // Deriva 32 bytes a partir de la clave (evita usar la clave "en crudo")
-  return crypto.createHash('sha256').update(String(CREDS_SECRET)).digest();
-}
-
-function encryptText(plain) {
-  if (!plain) return null;
-  const iv = crypto.randomBytes(12);
-  const cipher = crypto.createCipheriv('aes-256-gcm', getKey(), iv);
-  const encrypted = Buffer.concat([cipher.update(String(plain), 'utf8'), cipher.final()]);
-  const tag = cipher.getAuthTag();
-  // Guarda todo en un solo campo: iv:ciphertext:tag (hex)
-  return `${iv.toString('hex')}:${encrypted.toString('hex')}:${tag.toString('hex')}`;
-}
-
-function decryptText(payload) {
-  if (!payload) return null;
-  const [ivHex, encHex, tagHex] = String(payload).split(':');
-  const iv = Buffer.from(ivHex, 'hex');
-  const encrypted = Buffer.from(encHex, 'hex');
-  const tag = Buffer.from(tagHex, 'hex');
-  const decipher = crypto.createDecipheriv('aes-256-gcm', getKey(), iv);
-  decipher.setAuthTag(tag);
-  const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
-  return decrypted.toString('utf8');
-}
 
 // Configurar conexión a MySQL
 const pool = mysql.createPool({
@@ -76,6 +45,38 @@ app.use(cors({
 }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+
+// Configurar multer para subida de archivos
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const uploadDir = path.join(__dirname, 'uploads/profiles');
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'profile-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB máximo
+    },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Solo se permiten archivos de imagen'), false);
+        }
+    }
+});
+
+// Servir archivos estáticos de perfiles
+app.use('/uploads/profiles', express.static(path.join(__dirname, 'uploads/profiles')));
 
 // Función para encriptar contraseñas
 async function encryptPassword(password) {
@@ -132,11 +133,25 @@ app.post('/login', async (req, res) => {
         const usuario = usuarios[0];
         const match = await bcrypt.compare(password, usuario.contraseña);
         if (match) {
-            res.json({ userId: usuario.id_usuario, userName: usuario.nombre, message: 'Login exitoso' });
+            // Devolver todos los datos del usuario (sin la contraseña)
+            const usuarioCompleto = {
+                id_usuario: usuario.id_usuario,
+                nombre: usuario.nombre,
+                email: usuario.email,
+                fecha_registro: usuario.fecha_registro
+            };
+            res.json({ 
+                message: 'Login exitoso',
+                usuario: usuarioCompleto,
+                // Mantener compatibilidad con código anterior
+                userId: usuario.id_usuario, 
+                userName: usuario.nombre 
+            });
         } else {
             res.status(401).json({ message: 'Credenciales incorrectas' });
         }
     } catch (err) {
+        console.error('Error en login:', err);
         res.status(500).json({ message: 'Error en el login' });
     }
 });
@@ -490,6 +505,105 @@ app.get('/api/servicios', async (req, res) => {
         res.status(500).json({ message: 'Error al obtener los servicios' });
     }
 });
+
+// ========== ENDPOINTS PARA CONFIGURACIÓN DE USUARIO (SIN MODIFICAR BD) ==========
+
+// Obtener perfil de usuario (solo datos básicos de BD)
+app.get('/api/usuarios/:id/perfil', async (req, res) => {
+    const { id } = req.params;
+    try {
+        // Solo obtener datos básicos que ya existen
+        const [usuarios] = await pool.query(
+            `SELECT id_usuario, nombre, email, fecha_registro 
+             FROM usuario WHERE id_usuario = ?`, 
+            [id]
+        );
+        
+        if (usuarios.length === 0) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        const usuario = usuarios[0];
+        
+        // Los demás campos (teléfono, fecha_nacimiento, etc.) se manejarán en el frontend
+        // con localStorage o sessionStorage
+        
+        res.json(usuario);
+    } catch (err) {
+        console.error('Error al obtener perfil:', err);
+        res.status(500).json({ message: 'Error al obtener el perfil del usuario' });
+    }
+});
+
+// Actualizar perfil de usuario (solo nombre en BD, resto local)
+app.put('/api/usuarios/:id/perfil', async (req, res) => {
+    const { id } = req.params;
+    const { nombre } = req.body; // Solo actualizamos el nombre en BD
+    
+    try {
+        // Verificar que el usuario existe
+        const [usuarioExiste] = await pool.query('SELECT id_usuario FROM usuario WHERE id_usuario = ?', [id]);
+        if (usuarioExiste.length === 0) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        // Solo actualizar nombre en tabla usuario (si se proporciona)
+        if (nombre) {
+            await pool.query('UPDATE usuario SET nombre = ? WHERE id_usuario = ?', [nombre, id]);
+        }
+
+        // Obtener los datos actualizados de la BD
+        const [usuarioActualizado] = await pool.query(
+            `SELECT id_usuario, nombre, email, fecha_registro
+             FROM usuario WHERE id_usuario = ?`,
+            [id]
+        );
+
+        res.json({
+            message: 'Perfil actualizado correctamente',
+            usuario: usuarioActualizado[0]
+            // Los demás campos (teléfono, fecha_nacimiento, etc.) se guardan en localStorage del frontend
+        });
+    } catch (err) {
+        console.error('Error al actualizar perfil:', err);
+        res.status(500).json({ message: 'Error al actualizar el perfil' });
+    }
+});
+
+// Cambiar contraseña
+app.put('/api/usuarios/:id/password', async (req, res) => {
+    const { id } = req.params;
+    const { password_actual, password_nueva } = req.body;
+    
+    try {
+        // Verificar contraseña actual
+        const [usuario] = await pool.query('SELECT contraseña FROM usuario WHERE id_usuario = ?', [id]);
+        if (usuario.length === 0) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        const match = await bcrypt.compare(password_actual, usuario[0].contraseña);
+        if (!match) {
+            return res.status(400).json({ message: 'La contraseña actual es incorrecta' });
+        }
+
+        // Encriptar nueva contraseña
+        const nuevaPasswordHash = await encryptPassword(password_nueva);
+        
+        // Actualizar contraseña
+        await pool.query('UPDATE usuario SET contraseña = ? WHERE id_usuario = ?', [nuevaPasswordHash, id]);
+
+        res.json({ message: 'Contraseña actualizada correctamente' });
+    } catch (err) {
+        console.error('Error al cambiar contraseña:', err);
+        res.status(500).json({ message: 'Error al cambiar la contraseña' });
+    }
+});
+
+// NOTA: Los endpoints de foto no son necesarios con esta aproximación
+// Las fotos se manejan como base64 en localStorage del frontend
+
+// ========== FIN ENDPOINTS CONFIGURACIÓN USUARIO ==========
 
 // Salir de un grupo
 app.delete('/api/grupos/salir/:groupId/:userId', async (req, res) => {

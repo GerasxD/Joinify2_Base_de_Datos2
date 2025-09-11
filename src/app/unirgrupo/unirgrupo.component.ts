@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { environment } from '../app.config';
+import { SweetAlertService } from '../services/sweet-alert.service';
 
 @Component({
   selector: 'app-unirgrupo',
@@ -14,7 +15,11 @@ export class UnirGrupoComponent implements OnInit {
 
   gruposDisponibles: any[] = [];
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(
+    private http: HttpClient, 
+    private router: Router,
+    private sweetAlert: SweetAlertService
+  ) {}
 
   ngOnInit(): void {
     this.obtenerGruposDisponibles(); // Cargar los grupos disponibles
@@ -23,7 +28,7 @@ export class UnirGrupoComponent implements OnInit {
   obtenerGruposDisponibles(): void {
     const usuarioId = localStorage.getItem('userId');
     if (!usuarioId) {
-        alert('Usuario no identificado. Por favor, inicia sesión.');
+        this.sweetAlert.warning('No autorizado', 'Usuario no identificado. Por favor, inicia sesión.');
         return;
     }
 
@@ -54,8 +59,9 @@ export class UnirGrupoComponent implements OnInit {
    unirseAGrupo(grupoId: number): void {
     const usuarioId = localStorage.getItem('userId');
     if (!usuarioId) {
-      alert('Debes iniciar sesión para unirte a un grupo');
-      this.router.navigate(['/login']);
+      this.sweetAlert.error('No autorizado', 'Debes iniciar sesión para unirte a un grupo').then(() => {
+        this.router.navigate(['/login']);
+      });
       return;
     }
 
@@ -66,11 +72,12 @@ export class UnirGrupoComponent implements OnInit {
     })
     .subscribe(
       response => {
-        alert('Te has unido al grupo exitosamente');
-        this.obtenerGruposDisponibles();
+        this.sweetAlert.success('¡Éxito!', 'Te has unido al grupo exitosamente').then(() => {
+          this.obtenerGruposDisponibles();
+        });
       },
       error => {
-        alert('No se pudo unir al grupo: ' + error.error.message);
+        this.sweetAlert.error('Error', 'No se pudo unir al grupo: ' + error.error.message);
       }
     );
   }
@@ -82,11 +89,11 @@ export class UnirGrupoComponent implements OnInit {
         .subscribe(
           (response) => {
             console.log(response.message, 'Disponibilidad:', response.disponibilidad);
-            alert(`La disponibilidad del grupo ${groupId} se actualizó a: ${response.disponibilidad}`);
+            this.sweetAlert.info('Disponibilidad actualizada', `La disponibilidad del grupo se actualizó a: ${response.disponibilidad}`);
           },
           (error) => {
             console.error('Error al actualizar la disponibilidad:', error);
-            alert('Error al verificar o actualizar la disponibilidad.');
+            this.sweetAlert.error('Error', 'Error al verificar o actualizar la disponibilidad.');
           }
         );
     }

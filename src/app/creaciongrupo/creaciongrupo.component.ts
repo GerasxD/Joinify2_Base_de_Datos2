@@ -5,11 +5,6 @@ import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { environment } from '../app.config';
 
-interface Servicio {
-  id_servicio: number;
-  nombre_servicio: string;
-}
-
 @Component({
   selector: 'app-creaciongrupo',
   standalone: true,
@@ -41,7 +36,7 @@ export class CreaciongrupoComponent implements OnInit {
 
   constructor(private http: HttpClient, private router: Router) {}
 
-  ngOnInit() {
+  constructor(private http: HttpClient, private router: Router) {
     this.loadServices();
   }
 
@@ -67,9 +62,7 @@ export class CreaciongrupoComponent implements OnInit {
   }
 
   onSubmit() {
-    const { name, serviceType, maxUsers, costPerUser, paymentPolicy, accountEmail, accountPassword } = this.groupData;
-
-    if (!name || !serviceType || !maxUsers || !costPerUser || !accountEmail || !accountPassword) {
+    if (!this.groupData.name || !this.groupData.serviceType || !this.groupData.maxUsers || !this.groupData.costPerUser) {
       alert('Por favor, completa todos los campos.');
       return;
     }
@@ -84,7 +77,7 @@ export class CreaciongrupoComponent implements OnInit {
 
     const userId = localStorage.getItem('userId');
     if (!userId) {
-      alert('No se puede crear el grupo. El usuario no está logueado.');
+      this.sweetAlert.error('No autorizado', 'No se puede crear el grupo. Debes iniciar sesión.');
       return;
     }
 
@@ -99,19 +92,17 @@ export class CreaciongrupoComponent implements OnInit {
       accountPassword
     };
 
-    this.http.post<{ id_grupo_suscripcion: number }>(
-      `${environment.apiUrl}/api/grupos/crear`,
-      payload
-    ).subscribe(
-      () => {
-        alert('Grupo creado exitosamente');
-        this.router.navigate(['/unirgrupo']);
-      },
-      (error) => {
-        const msg = error?.error?.message || 'Hubo un error al crear el grupo.';
-        alert(msg);
-        console.error('Error:', error);
-      }
-    );
+    this.http.post<{ id_grupo_suscripcion: number }>(`${environment.apiUrl}/api/grupos/crear`, grupoConUsuario)
+
+      .subscribe(
+        (response) => {
+          alert('Grupo creado exitosamente');
+          this.router.navigate(['/unirgrupo']);
+        },
+        (error) => {
+          alert('Hubo un error al crear el grupo.');
+          console.error('Error:', error);
+        }
+      );
   }
 }

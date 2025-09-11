@@ -1,70 +1,202 @@
 <main>
-  <section id="hero" class="hero">
-    <div class="container hero-container">
-      <div class="hero-text">
-        <h2>Comparte y Ahorra en tus Suscripciones</h2>
-        <p>Únete a una comunidad que maximiza el ahorro en servicios de streaming y más.</p>
-        <a routerLink="/register" class="btn-primary">¡Únete Ahora!</a>
-      </div>
-    </div>
-  </section>
-  <section id="features" class="features">
-    <div class="container">
-      <h3>Nuestras Características</h3>
-      <div class="features-grid">
-        <div class="feature-card">
-          <i class="fas fa-tasks fa-2x"></i>
-          <h4>Gestión Eficiente</h4>
-          <p>Controla todas tus suscripciones desde una sola plataforma.</p>
+        <!-- Hero Section -->
+        <section id="hero" class="hero">
+            <div class="container hero-container">
+                <div class="hero-text">
+                    <h2>Comparte y Ahorra en tus Suscripciones</h2>
+                    <p>Únete a una comunidad que maximiza el ahorro en servicios de streaming y más. Descubre una nueva forma inteligente de gestionar tus suscripciones digitales.</p>
+                    <a href="#" routerLink="/login" class="btn-primary">¡Únete Ahora!</a>
+                </div>
+                <div class="hero-visual">
+                    <div class="hero-graphic">
+                        <div class="subscription-icons">
+                            <div class="sub-icon"><i class="fab fa-netflix"></i></div>
+                            <div class="sub-icon"><i class="fab fa-spotify"></i></div>
+                            <div class="sub-icon"><i class="fab fa-amazon"></i></div>
+                            <div class="sub-icon"><i class="fab fa-youtube"></i></div>
+                            <div class="sub-icon"><i class="fas fa-tv"></i></div>
+                            <div class="sub-icon"><i class="fas fa-music"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+      <!-- Enhanced Features Section -->
+    <section id="features" class="features">
+        <div class="floating-elements">
+            <div class="floating-element">
+                <i class="fas fa-share-alt" style="font-size: 3rem; color: #ff6f00;"></i>
+            </div>
+            <div class="floating-element">
+                <i class="fas fa-users" style="font-size: 2.5rem; color: #00aaff;"></i>
+            </div>
+            <div class="floating-element">
+                <i class="fas fa-dollar-sign" style="font-size: 2rem; color: #ff6f00;"></i>
+            </div>
         </div>
-        <div class="feature-card">
-          <i class="fas fa-lock fa-2x"></i>
-          <h4>Pagos Seguros</h4>
-          <p>Confianza garantizada con integración a plataformas como PayPal.</p>
+
+        <div class="container">
+            <div class="features-header">
+                <h3>Nuestras Características</h3>
+                <p class="features-subtitle">Descubre por qué miles de usuarios confían en ShareSubs para maximizar sus ahorros y simplificar la gestión de suscripciones</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <div class="feature-icon">
+                            <i class="fas fa-tasks"></i>
+                        </div>
+                    </div>
+                    <div class="feature-content">
+                        <h4>Gestión Eficiente</h4>
+                        <p>Controla todas tus suscripciones desde una sola plataforma intuitiva y fácil de usar. Organiza, monitorea y optimiza todos tus servicios digitales.</p>
+                        
+                        <div class="feature-stats">
+                            <div class="stat">
+                                <span class="stat-number">98%</span>
+                                <span class="stat-label">Satisfacción</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">15+</span>
+                                <span class="stat-label">Servicios</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">24/7</span>
+                                <span class="stat-label">Soporte</span>
+                            </div>
+                        </div>
+                        
+                        <a href="#" class="feature-link">
+                            Explorar funciones <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <div class="feature-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                    </div>
+                    <div class="feature-content">
+                        <h4>Pagos Seguros</h4>
+                        <p>Confianza garantizada con integración a plataformas como PayPal y sistemas de seguridad avanzados. Tu información siempre protegida.</p>
+                        
+                        <div class="feature-stats">
+                            <div class="stat">
+                                <span class="stat-number">256-bit</span>
+                                <span class="stat-label">Encriptación</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">100%</span>
+                                <span class="stat-label">Seguro</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">SSL</span>
+                                <span class="stat-label">Certificado</span>
+                            </div>
+                        </div>
+                        
+                        <a href="#" class="feature-link">
+                            Ver seguridad <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <div class="feature-icon">
+                            <i class="fas fa-rocket"></i>
+                        </div>
+                    </div>
+                    <div class="feature-content">
+                        <h4>Multiplataforma</h4>
+                        <p>Acceso web y móvil para gestionar suscripciones en cualquier lugar y momento. Sincronización instantánea entre todos tus dispositivos.</p>
+                        
+                        <div class="feature-stats">
+                            <div class="stat">
+                                <span class="stat-number">iOS</span>
+                                <span class="stat-label">& Android</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">Web</span>
+                                <span class="stat-label">App</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">Sync</span>
+                                <span class="stat-label">Tiempo Real</span>
+                            </div>
+                        </div>
+                        
+                        <a href="#" class="feature-link">
+                            Descargar app <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="feature-card">
-          <i class="fas fa-mobile-alt fa-2x"></i>
-          <h4>Multiplataforma</h4>
-          <p>Acceso web y móvil para gestionar suscripciones en cualquier lugar.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-
-
-  <section id="movies" class="movies">
-    <div class="container">
-      <h3>Películas Populares</h3>
-      <div class="movies-grid">
-        @for (movie of movies; track movie) {
-          <div class="movie-card">
-            <img
-              [src]="'https://image.tmdb.org/t/p/w500' + movie.poster_path"
-              [alt]="movie.title"
-              />
-            <h4>{{ movie.title }}</h4>
-            <p>{{ movie.overview }}</p>
-            <p><strong>Fecha de estreno:</strong> {{ movie.release_date }}</p>
-          </div>
-        }
-      </div>
-    </div>
-  </section>
-
-
-  <br><br><br>
-
-
-
-
-  <section id="cta" class="cta">
-    <div class="container">
-      <h3>¿Listo para empezar?</h3>
-      <p>Crea tu cuenta y comienza a compartir.</p>
-      <br>
-        <a routerLink="/register" class="btn-primary">Regístrate</a>
-        <br><br>
-      </div>
     </section>
-  </main>
+
+        <section id="movies" class="movies">
+          <div class="container">
+            <h3>Películas Populares</h3>
+            <div class="movies-grid">
+              @for (movie of movies; track movie.id) {
+                <div class="movie-card">
+                  <div class="movie-poster-wrapper">
+                    <img
+                      [src]="'https://image.tmdb.org/t/p/w500' + movie.poster_path"
+                      [alt]="movie.title"
+                      class="movie-poster-img"
+                      loading="lazy"
+                      (error)="onImageError($event)"
+                    />
+                    <div class="movie-overlay">
+                      <i class="fas fa-play-circle"></i>
+                    </div>
+                  </div>
+                  <div class="movie-info">
+                    <h4>{{ movie.title }}</h4>
+                    <p class="movie-overview">{{ movie.overview }}</p>
+                    <p class="movie-date"><strong>Fecha de estreno:</strong> {{ movie.release_date }}</p>
+                  </div>
+                </div>
+              }
+              
+              <!-- Loading state -->
+              @if (isLoadingMovies) {
+                <div class="loading-skeleton" *ngFor="let item of [1,2,3,4,5,6]">
+                  <div class="skeleton-poster"></div>
+                  <div class="skeleton-content">
+                    <div class="skeleton-title"></div>
+                    <div class="skeleton-text"></div>
+                    <div class="skeleton-text short"></div>
+                  </div>
+                </div>
+              }
+              
+              <!-- Empty state -->
+              @if (!isLoadingMovies && movies.length === 0) {
+                <div class="empty-state">
+                  <i class="fas fa-film"></i>
+                  <h4>No hay películas disponibles</h4>
+                  <p>Intenta recargar la página</p>
+                </div>
+              }
+            </div>
+          </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section id="cta" class="cta">
+            <div class="container cta-content">
+                <h3>¿Listo para empezar?</h3>
+                <p>Crea tu cuenta y comienza a compartir. Únete a miles de usuarios que ya están ahorrando.</p>
+                <a href="#" routerLink="/login" class="btn-primary">Regístrate</a>
+            </div>
+        </section>
+</main>
+

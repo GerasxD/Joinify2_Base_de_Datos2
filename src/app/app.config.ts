@@ -2,21 +2,20 @@ import { ApplicationConfig, provideZoneChangeDetection, LOCALE_ID } from '@angul
 import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { provideHttpClient } from '@angular/common/http';
+import { provideAnimations } from '@angular/platform-browser/animations';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
     provideHttpClient(),
+    provideAnimations(), // Habilita las animaciones de Angular
     { provide: LOCALE_ID, useValue: 'es-MX' }
   ]
 };
 
 // Configuración global de la API
 export const environment = {
-  production: false,
-  apiBase: 'http://localhost:3001',
-  apiUrl: 'http://localhost:3001', // add alias for backward compatibility
-  stripePK: 'pk_test_XXXX_REEMPLAZA_POR_LA_TUYA'
+  apiUrl: 'http://172.16.135.189:3001' 
 };
 
