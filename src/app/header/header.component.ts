@@ -1,15 +1,16 @@
 import { Component, OnInit, HostListener } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { DatePipe, CommonModule } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { environment } from '../app.config';
 import { UsuarioService } from '../services/usuario.service';
 
 @Component({
   selector: 'app-header',
-  imports: [RouterModule, CommonModule],
+  standalone: true,
+  imports: [RouterModule],
   templateUrl: './header.component.html',
-  styleUrl: './header.component.css'
+  styleUrls: ['./header.component.css']
 })
 export class HeaderComponent implements OnInit {
 
@@ -21,7 +22,7 @@ export class HeaderComponent implements OnInit {
   notificaciones: any[] = [];
   showPagosPopup = false;
   historialPagos: any[] = [];
-  datePipe = new DatePipe('es-MX');
+  datePipe: any;
 
   constructor(
     private router: Router, 

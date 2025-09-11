@@ -16,6 +16,6 @@ export const appConfig: ApplicationConfig = {
 
 // Configuración global de la API
 export const environment = {
-  apiUrl: 'http://localhost:3001' 
+  apiUrl: 'http://172.16.132.90:3001' 
 };
 

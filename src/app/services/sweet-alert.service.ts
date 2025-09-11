@@ -121,7 +121,7 @@ export class SweetAlertService {
       customClass: {
         popup: 'joinify-toast-popup'
       },
-      didOpen: (toast) => {
+      didOpen: (toast: HTMLElement) => {
         toast.addEventListener('mouseenter', Swal.stopTimer);
         toast.addEventListener('mouseleave', Swal.resumeTimer);
       }
@@ -139,7 +139,7 @@ export class SweetAlertService {
       showCancelButton: true,
       confirmButtonText: 'OK',
       cancelButtonText: 'Cancelar',
-      inputValidator: (value) => {
+      inputValidator: (value: string): string | null => {
         if (!value) {
           return 'Este campo es requerido';
         }
@@ -168,3 +168,26 @@ export class SweetAlertService {
     Swal.close();
   }
 }
+
+// Ejemplo: asegurar tipos en callbacks
+const toastOptions = {
+  toast: true,
+  position: 'top-end',
+  showConfirmButton: false,
+  timer: 3000,
+  didOpen: (toast: HTMLElement) => { // explicit type
+    toast.addEventListener('mouseenter', Swal.stopTimer);
+    toast.addEventListener('mouseleave', Swal.resumeTimer);
+  }
+};
+
+// Y donde uses inputValidator:
+Swal.fire({
+  // ...
+  inputValidator: (value: string): string | null => {
+    if (!value) {
+      return 'Este campo es requerido';
+    }
+    return null;
+  }
+});
