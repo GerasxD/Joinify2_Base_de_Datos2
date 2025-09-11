@@ -29,6 +29,10 @@ export class SweetAlertService {
 
   // Alerta de éxito
   success(title: string, text?: string, timer: number = 3000): Promise<any> {
+    if (!title) {
+      console.warn('SweetAlert: title es requerido para success');
+      return Promise.resolve();
+    }
     return Swal.fire({
       ...this.getCommonConfig(),
       icon: 'success',
@@ -44,6 +48,10 @@ export class SweetAlertService {
 
   // Alerta de error
   error(title: string, text?: string): Promise<any> {
+    if (!title) {
+      console.warn('SweetAlert: title es requerido para error');
+      return Promise.resolve();
+    }
     return Swal.fire({
       ...this.getCommonConfig(),
       icon: 'error',
@@ -168,26 +176,3 @@ export class SweetAlertService {
     Swal.close();
   }
 }
-
-// Ejemplo: asegurar tipos en callbacks
-const toastOptions = {
-  toast: true,
-  position: 'top-end',
-  showConfirmButton: false,
-  timer: 3000,
-  didOpen: (toast: HTMLElement) => { // explicit type
-    toast.addEventListener('mouseenter', Swal.stopTimer);
-    toast.addEventListener('mouseleave', Swal.resumeTimer);
-  }
-};
-
-// Y donde uses inputValidator:
-Swal.fire({
-  // ...
-  inputValidator: (value: string): string | null => {
-    if (!value) {
-      return 'Este campo es requerido';
-    }
-    return null;
-  }
-});
