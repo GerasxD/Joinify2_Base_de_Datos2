@@ -4,75 +4,109 @@
         <h2><i class="fas fa-users"></i> Crear un nuevo grupo</h2>
         <p>Complete los detalles del grupo</p>
       </div>
+
       <form (ngSubmit)="onSubmit()">
         <div class="form-group">
           <label for="groupName"><i class="fas fa-tag"></i> Nombre del grupo</label>
-          <input 
-            type="text" 
-            id="groupName" 
-            [(ngModel)]="groupData.name" 
-            name="name" 
-            required 
+          <input
+            type="text"
+            id="groupName"
+            [(ngModel)]="groupData.name"
+            name="name"
+            required
             class="form-input"
-            placeholder="Nombre del grupo"
-          >
+            placeholder="Nombre del grupo">
         </div>
-       
-       
-       <div class="form-group">
-  <label for="serviceType"><i class="fas fa-globe"></i> Tipo de servicio/plataforma</label>
-  <select 
-    id="serviceType" 
-    [(ngModel)]="groupData.serviceType" 
-    name="serviceType" 
-    required 
-    class="form-select"
-  >
-    <option value="" disabled selected>Selecciona una plataforma</option>
-    <option *ngFor="let service of serviceList" [value]="service.nombre_servicio">
-      {{ service.nombre_servicio }}
-    </option>
-  </select>
-</div>
 
+        <div class="form-group">
+          <label for="serviceType"><i class="fas fa-globe"></i> Tipo de servicio/plataforma</label>
+          <select
+            id="serviceType"
+            [(ngModel)]="groupData.serviceType"
+            name="serviceType"
+            required
+            class="form-select">
+            <option value="" disabled>Selecciona una plataforma</option>
+            <option *ngFor="let service of serviceList" [value]="service.nombre_servicio">
+              {{service.nombre_servicio}}
+            </option>
+          </select>
+        </div>
 
         <div class="form-group">
           <label for="maxUsers"><i class="fas fa-users-cog"></i> Número máximo de usuarios</label>
-          <input 
-            type="number" 
-            id="maxUsers" 
-            [(ngModel)]="groupData.maxUsers" 
-            name="maxUsers" 
-            required 
+          <input
+            type="number"
+            id="maxUsers"
+            [(ngModel)]="groupData.maxUsers"
+            name="maxUsers"
+            required
+            min="1"
             class="form-input"
-            placeholder="Número máximo"
-          >
+            placeholder="Número máximo">
         </div>
+
         <div class="form-group">
           <label for="costPerUser"><i class="fas fa-dollar-sign"></i> Costo por usuario</label>
-          <input 
-            type="number" 
-            id="costPerUser" 
-            [(ngModel)]="groupData.costPerUser" 
-            name="costPerUser" 
-            required 
+          <input
+            type="number"
+            id="costPerUser"
+            [(ngModel)]="groupData.costPerUser"
+            name="costPerUser"
+            required
+            min="0"
+            step="0.01"
             class="form-input"
-            placeholder="Costo por usuario"
-          >
+            placeholder="Costo por usuario">
         </div>
+
         <div class="form-group">
           <label for="paymentPolicy"><i class="fas fa-credit-card"></i> Política de pago</label>
-          <select 
-            id="paymentPolicy" 
-            [(ngModel)]="groupData.paymentPolicy" 
-            name="paymentPolicy" 
-            required 
-            class="form-select"
-          >
+          <select
+            id="paymentPolicy"
+            [(ngModel)]="groupData.paymentPolicy"
+            name="paymentPolicy"
+            required
+            class="form-select">
             <option value="monthly">Mensual</option>
             <option value="annual">Anual</option>
           </select>
         </div>
+
+        <!-- NUEVOS CAMPOS -->
+        <div class="form-group">
+          <label for="accountEmail"><i class="fas fa-envelope"></i> Correo de la cuenta</label>
+          <input
+            type="email"
+            id="accountEmail"
+            [(ngModel)]="groupData.accountEmail"
+            name="accountEmail"
+            required
+            class="form-input"
+            placeholder="correo@servicio.com"
+            autocomplete="email">
+        </div>
+
+        <div class="form-group">
+          <label for="accountPassword"><i class="fas fa-key"></i> Contraseña de la cuenta</label>
+          <div class="input-with-button">
+            <input
+              [type]="showPass ? 'text' : 'password'"
+              id="accountPassword"
+              [(ngModel)]="groupData.accountPassword"
+              name="accountPassword"
+              required
+              minlength="6"
+              class="form-input"
+              placeholder="Contraseña"
+              autocomplete="new-password">
+            <button type="button" class="toggle-btn" (click)="showPass = !showPass">
+              {{ showPass ? 'Ocultar' : 'Ver' }}
+            </button>
+          </div>
+          <small>Se guardará cifrada en el servidor; solo miembros podrán verla.</small>
+        </div>
+
         <div class="form-group">
           <button type="submit" class="form-submit">
             <i class="fas fa-plus-circle"></i> Crear grupo

@@ -1,277 +1,82 @@
 <div class="misgrupos-container">
   <h2 class="page-title">Mis Grupos</h2>
 
-  @if (errorMessage) {
-    <div class="error-message">
-      {{ errorMessage }}
-    </div>
-  }
+  <div *ngIf="errorMessage" class="error-message">{{ errorMessage }}</div>
 
-  @if (!errorMessage && grupos.length === 0) {
-    <div class="no-groups-message">
-      No tienes grupos creados ni asociados.
-    </div>
-  }
+  <div *ngIf="!errorMessage && grupos.length === 0" class="no-groups-message">
+    No tienes grupos activos
+  </div>
 
-  @if (!errorMessage && grupos.length > 0) {
-    <div class="groups-list">
-      @for (grupo of grupos; track grupo) {
-        <div>
-          <div class="group-card">
-            <div class="group-card-header">
-              <h3>{{ grupo.name }}</h3>
-              <span class="service-type">{{ grupo.serviceType }}</span>
-            </div>
-            <div class="group-card-body">
-              <p><strong>Usuarios:</strong> {{ grupo.currentUsers }} / {{ grupo.maxUsers }}</p>
-              <p><strong>Costo por usuario:</strong> ${{ grupo.costPerUser }}</p>
-              <p><strong>Política de pago:</strong> {{ grupo.paymentPolicy }}</p>
-              <p><strong>Límite de pago:</strong> {{ grupo.fechaLimite }}</p>
-              
-              <!-- ADMIN: Botones de activar/inactivar/eliminar -->
-              @if (grupo.isCreatedByUser) {
-                <div style="
-                  display: flex;
-                  flex-direction: column;
-                  align-items: center;
-                  margin-top: 10px;
-                ">
-                  <p style="
-                    color: #3a9237; 
-                    font-weight: bold;
-                    margin-bottom: 10px;
-                  ">Tu creaste este grupo</p>
+  <div *ngIf="!errorMessage && grupos.length > 0" class="groups-list">
+    <div *ngFor="let grupo of grupos; trackBy: trackGrupoById" class="group-card">
+      <div class="group-card-header">
+        <h3>{{ grupo.name }}</h3>
+        <span class="service-type">{{ grupo.serviceType }}</span>
+      </div>
 
-                  @if (grupo.estado_grupo === 'Activo') {
-                    <button 
-                      (click)="inactivarGrupo(grupo.id)"
-                      style="
-                        background-color: #f0ad4e;
-                        color: white;
-                        margin-bottom: 8px;
-                        padding: 8px;
-                        border: none;
-                        border-radius: 8px;
-                        font-family: 'Arial', sans-serif;
-                        font-size: 16px;
-                        font-weight: 600;
-                        text-transform: uppercase;
-                        letter-spacing: 1px;
-                        cursor: pointer;
-                        transition: all 0.3s ease;
-                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                        outline: none;
-                      "
-                    >
-                      Inactivar grupo
-                    </button>
-                  }
+      <div class="group-card-body">
+        <p><strong>Usuarios:</strong> {{ grupo.currentUsers }} / {{ grupo.maxUsers }}</p>
+        <p><strong>Costo por usuario:</strong> ${{ grupo.costPerUser }}</p>
+        <p><strong>Política de pago:</strong> {{ grupo.paymentPolicy === 'monthly' ? 'Mensual' : 'Anual' }}</p>
+        <p><strong>Estado:</strong> {{ grupo.estado_grupo }}</p>
 
-                  @if (grupo.estado_grupo === 'Inactivo') {
-                    <button 
-                      (click)="activarGrupo(grupo.id)"
-                      style="
-                        background-color: #007bff;
-                        color: white;
-                        margin-bottom: 8px;
-                        padding: 8px;
-                        border: none;
-                        border-radius: 8px;
-                        font-family: 'Arial', sans-serif;
-                        font-size: 16px;
-                        font-weight: 600;
-                        text-transform: uppercase;
-                        letter-spacing: 1px;
-                        cursor: pointer;
-                        transition: all 0.3s ease;
-                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                        outline: none;
-                      "
-                    >
-                      Activar grupo
-                    </button>
-                  }
-
-                  <button
-                    style="
-                      max-width: 200px;
-                      padding: 8px;
-                      background-color: #dc3545;
-                      color: white;
-                      border: none;
-                      border-radius: 8px;
-                      font-family: 'Arial', sans-serif;
-                      font-size: 16px;
-                      font-weight: 600;
-                      text-transform: uppercase;
-                      letter-spacing: 1px;
-                      cursor: pointer;
-                      transition: all 0.3s ease;
-                      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                      outline: none;
-                    "
-                    (click)="darDeBajaGrupo(grupo.id)"
-                  >
-                    Eliminar grupo
-                  </button>
-                </div>
-              }
-              <!-- MIEMBRO: Grupo ACTIVO -->
-              @else if (grupo.isJoinedByUser && grupo.estado_grupo === 'Activo') {
-                <div style="
-                  display: flex;
-                  justify-content: center;
-                  align-items: center;
-                  width: 100%;
-                  padding: 15px 0;
-                ">
-                  <button
-                    style="
-                      max-width: 200px;
-                      padding: 8px;
-                      background-color: #f0ad4e;
-                      color: white;
-                      border: none;
-                      border-radius: 8px;
-                      font-family: 'Arial', sans-serif;
-                      font-size: 16px;
-                      font-weight: 600;
-                      text-transform: uppercase;
-                      letter-spacing: 1px;
-                      cursor: pointer;
-                      transition: all 0.3s ease;
-                      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                      outline: none;
-                    "
-                    (click)="salirDelGrupo(grupo.id)"
-                  >
-                    Salir del grupo
-                  </button>
-                </div>
-                <div style="
-                  display: flex;
-                  justify-content: center;
-                  align-items: center;
-                  width: 100%;
-                  padding: 15px 0;
-                ">
-                  <button 
-                    class="pay-button" 
-                    (click)="simularPago(grupo.id, grupo.costPerUser)"
-                    style="
-                      max-width: 200px;
-                      padding: 12px 24px;
-                      background-color: #3a9237;
-                      color: white;
-                      border: none;
-                      border-radius: 8px;
-                      font-family: 'Arial', sans-serif;
-                      font-size: 16px;
-                      font-weight: 600;
-                      text-transform: uppercase;
-                      letter-spacing: 1px;
-                      cursor: pointer;
-                      transition: all 0.3s ease;
-                      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                      outline: none;
-                    "
-                  >
-                    Pagar ahora
-                  </button>
-                </div>
-              }
-              <!-- MIEMBRO: Grupo INACTIVO -->
-              @else if (grupo.isJoinedByUser && grupo.estado_grupo === 'Inactivo') {
-                <div style="color: #dc3545; font-weight: bold; margin: 10px 0; text-align: center;">
-                  Este grupo está inactivo. Contacta al administrador para más información.
-                </div>
-              }
-            </div>
+        <div class="credentials-container">
+          <h4>Credenciales de la cuenta</h4>
+          <div class="credential-item">
+            <strong>Correo:</strong>
+            <span class="credential-value">{{ grupo.correo_cuenta }}</span>
+          </div>
+          <div class="credential-item">
+            <strong>Contraseña:</strong>
+            <span class="credential-value">
+              <ng-container *ngIf="grupo.contrasena_cuenta !== 'No disponible'; else noDisponible">
+                {{ grupo.contrasena_cuenta }}
+              </ng-container>
+              <ng-template #noDisponible>
+                <span class="no-disponible">No disponible</span>
+              </ng-template>
+            </span>
           </div>
         </div>
-      }
-    </div>
-  }
 
-  <!-- Nueva sección de notificaciones -->
-  @if (notificaciones && notificaciones.length > 0) {
-    <div class="notifications-container">
-      <h3 class="notifications-title">Notificaciones</h3>
-      <ul class="notifications-list">
-        @for (notificacion of notificaciones; track notificacion) {
-          <li class="notification-item">
-            🔔 {{ notificacion.mensaje }}
-          </li>
-        }
-      </ul>
-    </div>
-  }
+        <!-- Botones de acción -->
+        <div *ngIf="grupo.isCreatedByUser; else notCreator" class="action-buttons">
+          <button *ngIf="grupo.estado_grupo === 'Activo'; else activarBtn" class="btn btn-warning" (click)="inactivarGrupo(grupo.id)">
+            Inactivar Grupo
+          </button>
+          <ng-template #activarBtn>
+            <button class="btn btn-success" (click)="activarGrupo(grupo.id)">
+              Activar Grupo
+            </button>
+          </ng-template>
+          <button class="btn btn-danger" (click)="darDeBajaGrupo(grupo.id)">
+            Eliminar Grupo
+          </button>
+        </div>
 
-      <!-- Historial de Pagos
-  @if (historialPagos.length > 0) {
-    <div class="historial-container">
-      <h3 class="page-title" style="margin-top: 40px;">Historial de Pagos</h3>
+        <ng-template #notCreator>
+          <div class="member-actions">
+            <button class="btn btn-secondary" (click)="salirDelGrupo(grupo.id)">
+              Salir del Grupo
+            </button>
 
-      <div class="groups-list">
-        @for (pago of historialPagos; track pago) {
-          <div class="group-card" style="max-width: 350px; min-width: 280px;">
-            <div class="group-card-header" style="background-color: #eaf1fb;">
-              <h3 style="margin: 0;">#{{ pago.id_historial_pago }}</h3>
-              <span class="service-type">ID Pago: {{ pago.id_pago }}</span>
-            </div>
-            <div class="group-card-body" style="padding-top: 10px;">
-              <p><strong>Grupo asociado:</strong> {{ pago.id_grupo_suscripcion }}</p>
-              <p style="color: #3a9237; font-weight: bold;">✔ Pago registrado correctamente</p>
-            </div>
+            <!-- Si el grupo está activo y el usuario es miembro, muestra el botón de pago -->
+            <button
+              *ngIf="grupo.estado_grupo === 'Activo'"
+              class="btn btn-success pay-button"
+              (click)="pagarGrupo(grupo)"
+            >
+              Pagar ahora
+            </button>
           </div>
-        }
+        </ng-template>
       </div>
     </div>
-  }
-  @else if (pagosError) {
-    <div class="error-message" style="margin-top: 30px;">{{ pagosError }}</div>
-  }
-  @else {
-    <div class="no-groups-message" style="margin-top: 30px;">
-      No se han registrado pagos aún.
-    </div>
-  } -->
-
-  <div style="
-    display: flex;
-    margin-top: 30px;
-    justify-content: center;
-    align-items: center;
-    background-color: #f0f4f8;
-    padding: 12px 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    border-left: 4px solid #4a90e2;
-">
-    <span style="
-        font-family: 'Arial', sans-serif;
-        font-weight: 600;
-        color: #2c3e50;
-        font-size: 19px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    ">
-        Pago en una sola exhibición
-    </span>
+  </div>
 </div>
 
-  <div id="card-element" style="
-  width: 100%; 
-  max-width: 500px; 
-  margin: 20px auto; 
-  padding: 20px; 
-  background-color: #f8f9fa; 
-  border-radius: 12px; 
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e2e6ea;
-  transition: all 0.3s ease;
-">
-  
-
-</div>
+<!-- Sección visual del método de pago (un único Card Element) -->
+<div class="pago-panel">
+  <div class="pago-titulo">Pago en una sola exhibición</div>
+  <div id="card-element"></div>
 </div>

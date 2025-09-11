@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, TrackByFunction } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { loadStripe } from '@stripe/stripe-js';
 import { HistorialPago } from '../models/historial-pago.model';
@@ -6,16 +6,35 @@ import { HistorialPagosService } from '../services/historial-pagos.service';
 import { CommonModule } from '@angular/common';
 import { environment } from '../app.config';
 import { SweetAlertService } from '../services/sweet-alert.service';
+import { RouterModule } from '@angular/router';
+
+// Define Grupo interface if not already imported
+export interface Grupo {
+  id: number;
+  name: string;
+  serviceType: string;
+  maxUsers: number;
+  currentUsers: number;
+  costPerUser: number;
+  paymentPolicy: string;
+  fechaLimite: string;
+  rol: string;
+  isCreatedByUser: boolean;
+  isJoinedByUser: boolean;
+  estado_grupo: string;
+  correo_cuenta: string;
+  contrasena_cuenta: string;
+}
 
 
 @Component({
   selector: 'app-misgrupos',
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './misgrupos.component.html',
   styleUrls: ['./misgrupos.component.css']
 })
 export class MisGruposComponent implements OnInit, OnDestroy {
-  grupos: any[] = [];
+  grupos: Grupo[] = [];
   notificaciones: any[] = [];
   errorMessage: string = '';
   stripe: any;
@@ -29,6 +48,10 @@ export class MisGruposComponent implements OnInit, OnDestroy {
   historialPagos: HistorialPago[] = [];
   pagosError = '';
 today: any;
+  // Add the trackBy function (remove it from the interface declaration)
+  trackGrupoById: TrackByFunction<Grupo> = (_index: number, grupo: Grupo) => {
+    return grupo.id;
+  };
 
 
   constructor(
@@ -56,15 +79,17 @@ today: any;
             serviceType: grupo.nombre_servicio,
             maxUsers: grupo.num_integrantes,
             currentUsers: grupo.currentUsers || 1,
-            costPerUser: grupo.costo_total && grupo.num_integrantes ? (grupo.costo_total / grupo.num_integrantes).toFixed(2) : '',
+            costPerUser: grupo.costo_total && grupo.num_integrantes ? parseFloat((grupo.costo_total / grupo.num_integrantes).toFixed(2)) : 0,
             paymentPolicy: grupo.fecha_inicio && grupo.fecha_vencimiento
               ? this.calcularPoliticaPago(grupo.fecha_inicio, grupo.fecha_vencimiento)
-              : '',
+              : 'monthly',
             fechaLimite: grupo.fecha_vencimiento || '',
             rol: grupo.rol || '',
             isCreatedByUser: grupo.rol === 'Admin',
             isJoinedByUser: grupo.rol === 'Miembro',
-            estado_grupo: grupo.estado_grupo
+            estado_grupo: grupo.estado_grupo,
+            correo_cuenta: grupo.correo_cuenta || 'No disponible',
+            contrasena_cuenta: grupo.contrasena_cuenta || 'No disponible'
           }));
         },
         (error) => {
@@ -291,11 +316,11 @@ today: any;
   //     );
   // }
 
-  calcularPoliticaPago(fechaInicio: string, fechaVencimiento: string): string {
+  calcularPoliticaPago(fechaInicio: string, fechaVencimiento: string): 'monthly' | 'annual' {
     const inicio = new Date(fechaInicio);
     const fin = new Date(fechaVencimiento);
     const diff = (fin.getFullYear() - inicio.getFullYear()) * 12 + (fin.getMonth() - inicio.getMonth());
-    return diff >= 11 ? 'Anual' : 'Mensual';
+    return diff >= 11 ? 'annual' : 'monthly';
   }
 
   inactivarGrupo(grupoId: number): void {
@@ -338,6 +363,21 @@ today: any;
           );
       }
     });
+  }
+
+  showPassword: { [key: number]: boolean } = {};
+
+  togglePassword(groupId: number) {
+    this.showPassword[groupId] = !this.showPassword[groupId];
+  }
+
+  // trackBy ya existe
+  // Añadir pagarGrupo wrapper que convierte monto y llama a simularPago
+  pagarGrupo(grupo: Grupo): void {
+    const monto = typeof grupo.costPerUser === 'number'
+      ? grupo.costPerUser
+      : parseFloat(String(grupo.costPerUser || '0')) || 0;
+    this.simularPago(grupo.id, monto);
   }
 }
 

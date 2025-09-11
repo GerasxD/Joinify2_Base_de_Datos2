@@ -6,9 +6,34 @@ const cors = require('cors');
 const Stripe = require('stripe');
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
-const multer = require('multer');
-const path = require('path');
+
+// Añadir multer y fs para manejar subidas de archivos
 const fs = require('fs');
+const path = require('path');        // <<< añadir
+const multer = require('multer');
+
+// Asegurar que exista la carpeta uploads y uploads/profiles
+const uploadsDir = path.join(__dirname, 'uploads');
+const profilesDir = path.join(uploadsDir, 'profiles');
+
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+if (!fs.existsSync(profilesDir)) {
+  fs.mkdirSync(profilesDir, { recursive: true });
+}
+
+// Configuración de almacenamiento de multer
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadsDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + '-' + file.originalname);
+  }
+});
+const upload = multer({ storage });
 
 // Configurar conexión a MySQL
 const pool = mysql.createPool({
@@ -21,41 +46,33 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+// Configura Stripe con manejo de errores
+let stripe;
+try {
+    if (!process.env.STRIPE_SECRET_KEY) {
+        console.warn('⚠️ No se encontró STRIPE_SECRET_KEY. Los pagos no funcionarán.');
+        stripe = {
+            paymentIntents: {
+                create: () => Promise.reject(new Error('Stripe no está configurado'))
+            }
+        };
+    } else {
+        stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+    }
+} catch (error) {
+    console.error('Error al inicializar Stripe:', error);
+    process.exit(1);
+}
+
 const secretKey = 'mi_clave_secreta_12345_ghjlo_hyt';
 
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:4200', // URL de tu aplicación Angular
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true
+}));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-
-// Configurar multer para subida de archivos
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        const uploadDir = path.join(__dirname, 'uploads/profiles');
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        cb(null, uploadDir);
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'profile-' + uniqueSuffix + path.extname(file.originalname));
-    }
-});
-
-const upload = multer({
-    storage: storage,
-    limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB máximo
-    },
-    fileFilter: (req, file, cb) => {
-        if (file.mimetype.startsWith('image/')) {
-            cb(null, true);
-        } else {
-            cb(new Error('Solo se permiten archivos de imagen'), false);
-        }
-    }
-});
 
 // Servir archivos estáticos de perfiles
 app.use('/uploads/profiles', express.static(path.join(__dirname, 'uploads/profiles')));
@@ -93,17 +110,27 @@ app.get('/usuarios', async (req, res) => {
 });
 
 app.post('/usuario', async (req, res) => {
-    const { nombre, email, password } = req.body;
-    try {
-        const hashedPassword = await encryptPassword(password);
-        const [result] = await pool.query(
-            'INSERT INTO usuario (nombre, email, contraseña, fecha_registro) VALUES (?, ?, ?, ?)',
-            [nombre, email, hashedPassword, new Date()]
-        );
-        res.status(201).json({ message: 'Usuario creado correctamente' });
-    } catch (err) {
-        res.status(500).json({ message: 'Error al crear el usuario' });
+  console.log('[POST /usuario] body:', req.body); // << logging request
+  const { nombre, email, password } = req.body;
+  if (!nombre || !email || !password) {
+    return res.status(400).json({ message: 'Faltan campos obligatorios' });
+  }
+  try {
+    const hashedPassword = await encryptPassword(password);
+    const [result] = await pool.query(
+      'INSERT INTO usuario (nombre, email, contraseña, fecha_registro) VALUES (?, ?, ?, ?)',
+      [nombre, email, hashedPassword, new Date()]
+    );
+    console.log('[POST /usuario] insertId:', result.insertId);
+    res.status(201).json({ message: 'Usuario creado correctamente', id: result.insertId });
+  } catch (err) {
+    console.error('[POST /usuario] error:', err);
+    // Manejo común: email duplicado
+    if (err && err.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ message: 'El correo ya está registrado' });
     }
+    res.status(500).json({ message: 'Error al crear el usuario', detail: err.message || err });
+  }
 });
 
 app.post('/login', async (req, res) => {
@@ -139,28 +166,37 @@ app.post('/login', async (req, res) => {
 });
 
 app.post('/api/grupos/crear', async (req, res) => {
-    const { name, serviceType, maxUsers, costPerUser, paymentPolicy, userId } = req.body;
-    if (!name || !serviceType || !maxUsers || !costPerUser || !userId) {
+    const { name, serviceType, maxUsers, costPerUser, paymentPolicy, userId, accountEmail, accountPassword } = req.body;
+
+    if (!name || !serviceType || !maxUsers || !costPerUser || !userId || !accountEmail || !accountPassword) {
         return res.status(400).json({ message: 'Todos los campos son obligatorios' });
     }
+
     try {
-        const [servicio] = await pool.query('SELECT id_servicio, nombre_servicio FROM servicio_streaming WHERE nombre_servicio = ?', [serviceType]);
+        const [servicio] = await pool.query(
+            'SELECT id_servicio, nombre_servicio FROM servicio_streaming WHERE nombre_servicio = ?',
+            [serviceType]
+        );
         if (servicio.length === 0) return res.status(400).json({ message: 'Servicio no encontrado' });
 
         const id_servicio = servicio[0].id_servicio;
-        const nombre_servicio = servicio[0].nombre_servicio;
         const fecha_creacion = new Date();
         const fecha_inicio = new Date();
         const fecha_vencimiento = new Date();
-        fecha_vencimiento.setMonth(fecha_inicio.getMonth() + (paymentPolicy === 'annual' ? 12 : 1));
+        fecha_vencimiento.setMonth(
+            fecha_inicio.getMonth() + (paymentPolicy === 'annual' ? 12 : 1)
+        );
         const costo_total = costPerUser * maxUsers;
 
+        const encryptedPass = encryptText(accountPassword);
+
         const [result] = await pool.query(
-            `INSERT INTO grupo_suscripcion 
-            (nombre_grupo, fecha_creacion, estado_grupo, num_integrantes, id_servicio, costo_total, fecha_inicio, fecha_vencimiento, id_creador)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [name, fecha_creacion, 'Activo', maxUsers, id_servicio, costo_total, fecha_inicio, fecha_vencimiento, userId]
+            `INSERT INTO grupo_suscripcion
+             (nombre_grupo, fecha_creacion, estado_grupo, num_integrantes, id_servicio, costo_total, fecha_inicio, fecha_vencimiento, id_creador, correo_cuenta, contrasena_cuenta)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [name, fecha_creacion, 'Activo', maxUsers, id_servicio, costo_total, fecha_inicio, fecha_vencimiento, userId, accountEmail, encryptedPass]
         );
+
         const id_grupo_suscripcion = result.insertId;
 
         await pool.query(
@@ -170,25 +206,55 @@ app.post('/api/grupos/crear', async (req, res) => {
 
         res.status(201).json({ message: 'Grupo creado exitosamente', id_grupo_suscripcion });
     } catch (err) {
+        console.error(err);
         res.status(500).json({ message: 'Error al crear el grupo' });
     }
 });
 
 app.get('/api/grupos/usuario', async (req, res) => {
-    const id_usuario = req.query.id_usuario;
-    if (!id_usuario) return res.status(400).json({ error: 'ID de usuario no proporcionado' });
-    try {
-        const [grupos] = await pool.query(`
-            SELECT gs.*, ug.rol, ss.nombre_servicio,
-            (SELECT COUNT(*) FROM usuario_grupo ug2 WHERE ug2.id_grupo_suscripcion = gs.id_grupo_suscripcion) AS currentUsers
-            FROM grupo_suscripcion gs
-            JOIN usuario_grupo ug ON gs.id_grupo_suscripcion = ug.id_grupo_suscripcion
-            JOIN servicio_streaming ss ON gs.id_servicio = ss.id_servicio
-            WHERE ug.id_usuario = ?`, [id_usuario]);
-        res.json(grupos);
-    } catch (err) {
-        res.status(500).json({ message: 'Error al procesar la solicitud' });
-    }
+  const id_usuario = req.query.id_usuario;
+  if (!id_usuario) return res.status(400).json({ error: 'ID de usuario no proporcionado' });
+
+  try {
+    // First, get all groups for the user
+    const [grupos] = await pool.query(`
+      SELECT gs.*, ug.rol, ss.nombre_servicio,
+             (SELECT COUNT(*) FROM usuario_grupo ug2 
+              WHERE ug2.id_grupo_suscripcion = gs.id_grupo_suscripcion) AS currentUsers
+      FROM grupo_suscripcion gs
+      JOIN usuario_grupo ug ON gs.id_grupo_suscripcion = ug.id_grupo_suscripcion
+      JOIN servicio_streaming ss ON gs.id_servicio = ss.id_servicio
+      WHERE ug.id_usuario = ?`, [id_usuario]);
+
+    // Process each group to handle password visibility
+    const gruposConCredenciales = await Promise.all(grupos.map(async grupo => {
+      let mostrarPassword = false;
+
+      // Check if user is creator
+      if (grupo.id_creador === Number(id_usuario)) {
+        mostrarPassword = true;
+      } else {
+        // Check if user has made payments
+        const [pagos] = await pool.query(
+          `SELECT 1 FROM historial_pagos hp 
+           JOIN pago p ON hp.id_pago = p.id_pago 
+           WHERE hp.id_grupo_suscripcion = ? AND p.id_usuario = ? LIMIT 1`,
+          [grupo.id_grupo_suscripcion, id_usuario]
+        );
+        if (pagos.length > 0) mostrarPassword = true;
+      }
+
+      return {
+        ...grupo,
+        contrasena_cuenta: mostrarPassword ? decryptText(grupo.contrasena_cuenta) : 'No disponible'
+      };
+    }));
+
+    res.json(gruposConCredenciales);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Error al procesar la solicitud' });
+  }
 });
 
 app.post('/api/grupos/unirse', async (req, res) => {
@@ -585,6 +651,51 @@ app.delete('/api/grupos/baja/:groupId', async (req, res) => {
         res.status(500).json({ message: 'Error al procesar la solicitud' });
     }
 });
+
+app.get('/api/grupos/:groupId/credenciales', async (req, res) => {
+  const { groupId } = req.params;
+  const { userId } = req.query; // pásalo como query: ?userId=123
+
+  if (!groupId || !userId) {
+    return res.status(400).json({ message: 'groupId y userId son obligatorios' });
+  }
+
+  try {
+    // Verifica que el usuario sea miembro del grupo
+    const [m] = await pool.query(
+      'SELECT 1 FROM usuario_grupo WHERE id_usuario = ? AND id_grupo_suscripcion = ? LIMIT 1',
+      [userId, groupId]
+    );
+    if (m.length === 0) return res.status(403).json({ message: 'No autorizado' });
+
+    // Obtén credenciales
+    const [rows] = await pool.query(
+      'SELECT correo_cuenta, contrasena_cuenta FROM grupo_suscripcion WHERE id_grupo_suscripcion = ?',
+      [groupId]
+    );
+    if (rows.length === 0) return res.status(404).json({ message: 'Grupo no encontrado' });
+
+    const correo = rows[0].correo_cuenta || null;
+    const password = rows[0].contrasena_cuenta ? decryptText(rows[0].contrasena_cuenta) : null;
+
+    res.json({ correoCuenta: correo, passwordCuenta: password });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Error al obtener credenciales' });
+  }
+});
+
+// Test de conexión a MySQL al arrancar
+(async () => {
+  try {
+    const conn = await pool.getConnection();
+    await conn.query('SELECT 1');
+    conn.release();
+    console.log('MySQL: conexión OK');
+  } catch (err) {
+    console.error('MySQL: error de conexión inicial:', err.message || err);
+  }
+})();
 
 // ✅ Iniciar servidor
 app.listen(3001, '0.0.0.0', () => {
