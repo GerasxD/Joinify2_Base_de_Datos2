@@ -4,10 +4,12 @@ import { loadStripe } from '@stripe/stripe-js';
 import { HistorialPago } from '../models/historial-pago.model';
 import { HistorialPagosService } from '../services/historial-pagos.service';
 import { CommonModule } from '@angular/common';
-import { environment } from '../app.config';
+import { environment } from '../../environments/environment'; // use centralized env file
+import { RouterModule } from '@angular/router';
 
 
 interface Grupo {
+isCreatedByUser: any;
   id: number;
   name: string;
   serviceType: string;
@@ -17,7 +19,6 @@ interface Grupo {
   paymentPolicy: 'monthly' | 'annual';
   fechaLimite: string;
   rol: string;
-  isCreatedByUser: boolean;
   isJoinedByUser: boolean;
   estado_grupo: string;
   correo_cuenta: string;
@@ -26,7 +27,7 @@ interface Grupo {
 
 @Component({
   selector: 'app-misgrupos',
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './misgrupos.component.html',
   styleUrls: ['./misgrupos.component.css']
 })
@@ -354,6 +355,15 @@ today: any;
 
   togglePassword(groupId: number) {
     this.showPassword[groupId] = !this.showPassword[groupId];
+  }
+
+  // trackBy ya existe
+  // Añadir pagarGrupo wrapper que convierte monto y llama a simularPago
+  pagarGrupo(grupo: Grupo): void {
+    const monto = typeof grupo.costPerUser === 'number'
+      ? grupo.costPerUser
+      : parseFloat(String(grupo.costPerUser || '0')) || 0;
+    this.simularPago(grupo.id, monto);
   }
 }
 

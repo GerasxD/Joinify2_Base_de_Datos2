@@ -14,6 +14,9 @@ export const appConfig: ApplicationConfig = {
 
 // Configuración global de la API
 export const environment = {
-  apiUrl: 'http://localhost:3001'
+  production: false,
+  apiBase: 'http://localhost:3001',
+  apiUrl: 'http://localhost:3001', // add alias for backward compatibility
+  stripePK: 'pk_test_XXXX_REEMPLAZA_POR_LA_TUYA'
 };
 

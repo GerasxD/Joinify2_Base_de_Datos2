@@ -13,12 +13,13 @@
         <h3>{{ grupo.name }}</h3>
         <span class="service-type">{{ grupo.serviceType }}</span>
       </div>
+
       <div class="group-card-body">
         <p><strong>Usuarios:</strong> {{ grupo.currentUsers }} / {{ grupo.maxUsers }}</p>
         <p><strong>Costo por usuario:</strong> ${{ grupo.costPerUser }}</p>
         <p><strong>Política de pago:</strong> {{ grupo.paymentPolicy === 'monthly' ? 'Mensual' : 'Anual' }}</p>
         <p><strong>Estado:</strong> {{ grupo.estado_grupo }}</p>
-        
+
         <div class="credentials-container">
           <h4>Credenciales de la cuenta</h4>
           <div class="credential-item">
@@ -52,14 +53,30 @@
             Eliminar Grupo
           </button>
         </div>
+
         <ng-template #notCreator>
-          <button class="btn btn-secondary" (click)="salirDelGrupo(grupo.id)">
-            Salir del Grupo
-          </button>
+          <div class="member-actions">
+            <button class="btn btn-secondary" (click)="salirDelGrupo(grupo.id)">
+              Salir del Grupo
+            </button>
+
+            <!-- Si el grupo está activo y el usuario es miembro, muestra el botón de pago -->
+            <button
+              *ngIf="grupo.estado_grupo === 'Activo'"
+              class="btn btn-success pay-button"
+              (click)="pagarGrupo(grupo)"
+            >
+              Pagar ahora
+            </button>
+          </div>
         </ng-template>
       </div>
     </div>
   </div>
 </div>
 
-<!-- trackBy function should be defined in the component TypeScript file, not in HTML -->
+<!-- Sección visual del método de pago (un único Card Element) -->
+<div class="pago-panel">
+  <div class="pago-titulo">Pago en una sola exhibición</div>
+  <div id="card-element"></div>
+</div>
