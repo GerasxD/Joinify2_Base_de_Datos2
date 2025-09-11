@@ -3,6 +3,7 @@ import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { environment } from '../app.config';
+import { SweetAlertService } from '../services/sweet-alert.service';
 
 @Component({
   selector: 'app-login',
@@ -17,7 +18,11 @@ export class LoginComponent {
   };
 
   errorMessage: string = ''; // Variable para almacenar el mensaje de error
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(
+    private http: HttpClient, 
+    private router: Router,
+    private sweetAlert: SweetAlertService
+  ) {}
 
   // Lógica para manejar el envío de los datos de login
   onLoginSubmit(): void {
@@ -42,7 +47,7 @@ export class LoginComponent {
           });
         } else {
           console.log('Login fallido: Respuesta inesperada del servidor');
-          alert('Error en el login. Por favor, verifica tus credenciales.');
+          this.sweetAlert.error('Error de autenticación', 'Por favor, verifica tus credenciales.');
         }
       },
       (error) => {
