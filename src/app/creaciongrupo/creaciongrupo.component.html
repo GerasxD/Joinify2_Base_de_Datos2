@@ -89,21 +89,16 @@
 
         <div class="form-group">
           <label for="accountPassword"><i class="fas fa-key"></i> Contraseña de la cuenta</label>
-          <div class="input-with-button">
-            <input
-              [type]="showPass ? 'text' : 'password'"
-              id="accountPassword"
-              [(ngModel)]="groupData.accountPassword"
-              name="accountPassword"
-              required
-              minlength="6"
-              class="form-input"
-              placeholder="Contraseña"
-              autocomplete="new-password">
-            <button type="button" class="toggle-btn" (click)="showPass = !showPass">
-              {{ showPass ? 'Ocultar' : 'Ver' }}
-            </button>
-          </div>
+          <input
+            type="password"
+            id="accountPassword"
+            [(ngModel)]="groupData.accountPassword"
+            name="accountPassword"
+            required
+            minlength="6"
+            class="form-input"
+            placeholder="Contraseña"
+            autocomplete="new-password">
           <small>Se guardará cifrada en el servidor; solo miembros podrán verla.</small>
         </div>
 

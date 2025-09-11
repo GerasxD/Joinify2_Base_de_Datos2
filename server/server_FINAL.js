@@ -68,7 +68,7 @@ try {
 const secretKey = 'mi_clave_secreta_12345_ghjlo_hyt';
 
 app.use(cors({
-    origin: ['http://localhost:4200', 'http://localhost:4201'], // URL de tu aplicación Angular
+    origin: 'http://localhost:4200', // URL de tu aplicación Angular
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true
 }));
@@ -337,21 +337,10 @@ app.get('/api/grupos/usuario', async (req, res) => {
         if (pagos.length > 0) mostrarPassword = true;
       }
 
-      // Agregar información sobre el estado del grupo
-      let grupoInfo = {
+      return {
         ...grupo,
-        contrasena_cuenta: mostrarPassword ? decryptText(grupo.contrasena_cuenta) : 'No disponible',
-        isInactive: grupo.estado_grupo === 'Inactivo',
-        canLeave: grupo.estado_grupo === 'Activo', // Solo puede salir si está activo
-        canPay: grupo.estado_grupo === 'Activo'    // Solo puede pagar si está activo
+        contrasena_cuenta: mostrarPassword ? decryptText(grupo.contrasena_cuenta) : 'No disponible'
       };
-
-      // Si el grupo está inactivo, agregar mensaje informativo
-      if (grupo.estado_grupo === 'Inactivo') {
-        grupoInfo.inactiveMessage = `El grupo "${grupo.nombre_grupo}" está inactivo. No puedes realizar pagos ni salir del grupo. Contacta al administrador.`;
-      }
-
-      return grupoInfo;
     }));
 
     res.json(gruposConCredenciales);
@@ -459,23 +448,6 @@ app.post('/api/pagos/confirmar', async (req, res) => {
     try {
         const { userId, groupId, monto } = req.body;
         if (!userId || !groupId || !monto) return res.status(400).json({ message: 'Faltan datos obligatorios' });
-
-        // Verificar si el grupo está activo antes de procesar el pago
-        const [grupoInfo] = await pool.query(
-            'SELECT estado_grupo, nombre_grupo FROM grupo_suscripcion WHERE id_grupo_suscripcion = ?', 
-            [groupId]
-        );
-        
-        if (grupoInfo.length === 0) {
-            return res.status(404).json({ message: 'Grupo no encontrado' });
-        }
-        
-        if (grupoInfo[0].estado_grupo === 'Inactivo') {
-            return res.status(403).json({ 
-                message: `No puedes realizar pagos en el grupo "${grupoInfo[0].nombre_grupo}" porque está inactivo. Contacta al administrador del grupo.`,
-                isInactive: true
-            });
-        }
 
         const [pagoResult] = await pool.query('INSERT INTO pago (id_usuario, monto, fecha_pago) VALUES (?, ?, CURDATE())', [userId, monto]);
         const id_pago = pagoResult.insertId;
@@ -774,31 +746,9 @@ app.get('/api/debug/grupos/:groupId', async (req, res) => {
 app.delete('/api/grupos/salir/:groupId/:userId', async (req, res) => {
     const { groupId, userId } = req.params;
     try {
-        // Primero verificar si el grupo está activo
-        const [grupos] = await pool.query(
-            'SELECT estado_grupo, nombre_grupo FROM grupo_suscripcion WHERE id_grupo_suscripcion = ?', 
-            [groupId]
-        );
-        
-        if (grupos.length === 0) {
-            return res.status(404).json({ message: 'Grupo no encontrado.' });
-        }
-        
-        const grupo = grupos[0];
-        
-        // Si el grupo está inactivo, no permitir salir
-        if (grupo.estado_grupo === 'Inactivo') {
-            return res.status(403).json({ 
-                message: `No puedes salir del grupo "${grupo.nombre_grupo}" porque está inactivo. Contacta al administrador del grupo.`,
-                isInactive: true
-            });
-        }
-        
-        // Si el grupo está activo, permitir salir
         await pool.query('DELETE FROM usuario_grupo WHERE id_usuario = ? AND id_grupo_suscripcion = ?', [userId, groupId]);
         res.status(200).json({ message: 'Has salido del grupo correctamente.' });
     } catch (err) {
-        console.error('Error al salir del grupo:', err);
         res.status(500).json({ message: 'Error al procesar la solicitud.' });
     }
 });

@@ -38,7 +38,6 @@ export class CreaciongrupoComponent implements OnInit {
     accountPassword: ''
   };
 
-  showPass = false; // para alternar visibilidad
   serviceList: Servicio[] = [];
 
   constructor(
