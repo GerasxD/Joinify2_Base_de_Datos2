@@ -6,6 +6,7 @@ const cors = require('cors');
 const Stripe = require('stripe');
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 
 // Añadir multer y fs para manejar subidas de archivos
 const fs = require('fs');
@@ -40,7 +41,7 @@ const pool = mysql.createPool({
     host: 'localhost',
     user: 'root',
     password: 'Maicgio323-2',
-    database: 'joinify_db',
+    database: 'joinify_2l',
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
@@ -81,6 +82,71 @@ app.use('/uploads/profiles', express.static(path.join(__dirname, 'uploads/profil
 async function encryptPassword(password) {
     const saltRounds = 10;
     return await bcrypt.hash(password, saltRounds);
+}
+
+// Funciones para encriptar/desencriptar texto usando AES-256-CBC
+function encryptText(text) {
+    if (!text || typeof text !== 'string') {
+        console.warn('encryptText: texto inválido, devolviendo original');
+        return text || '';
+    }
+    
+    try {
+        const algorithm = 'aes-256-cbc';
+        const key = crypto.scryptSync(secretKey, 'salt', 32);
+        const iv = crypto.randomBytes(16);
+        
+        const cipher = crypto.createCipheriv(algorithm, key, iv);
+        let encrypted = cipher.update(text, 'utf8', 'hex');
+        encrypted += cipher.final('hex');
+        
+        return iv.toString('hex') + ':' + encrypted;
+    } catch (error) {
+        console.error('Error al encriptar:', error);
+        return text; // Devolver texto original si falla
+    }
+}
+
+function decryptText(encryptedData) {
+    // Validar entrada
+    if (!encryptedData || typeof encryptedData !== 'string') {
+        console.warn('decryptText: datos inválidos', typeof encryptedData, encryptedData);
+        return 'No disponible';
+    }
+    
+    try {
+        const algorithm = 'aes-256-cbc';
+        const key = crypto.scryptSync(secretKey, 'salt', 32);
+        
+        // Verificar formato
+        if (!encryptedData.includes(':')) {
+            console.warn('decryptText: formato inválido (sin ":")', encryptedData);
+            return encryptedData; // Posiblemente ya esté desencriptado
+        }
+        
+        const parts = encryptedData.split(':');
+        if (parts.length !== 2) {
+            console.warn('decryptText: formato inválido (partes)', parts.length);
+            return 'Error de formato';
+        }
+        
+        const iv = Buffer.from(parts[0], 'hex');
+        const encryptedText = parts[1];
+        
+        if (!encryptedText) {
+            console.warn('decryptText: texto encriptado vacío');
+            return 'No disponible';
+        }
+        
+        const decipher = crypto.createDecipheriv(algorithm, key, iv);
+        let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+        
+        return decrypted;
+    } catch (error) {
+        console.error('Error al desencriptar:', error.message);
+        return 'No disponible';
+    }
 }
 
 // Mensajes permitidos
