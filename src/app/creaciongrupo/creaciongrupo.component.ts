@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { environment } from '../app.config';
+import { SweetAlertService } from '../services/sweet-alert.service';
 
 interface Servicio {
   id: number;
@@ -39,13 +40,16 @@ export class CreaciongrupoComponent implements OnInit {
 
   showPass = false; // para alternar visibilidad
   serviceList: Servicio[] = [];
-  sweetAlert: any;
 
-  constructor(private http: HttpClient, private router: Router) {
+  constructor(
+    private http: HttpClient, 
+    private router: Router,
+    private sweetAlert: SweetAlertService
+  ) {
     this.loadServices();
   }
   ngOnInit(): void {
-    throw new Error('Method not implemented.');
+    // Método implementado - cargar servicios se hace en constructor
   }
 
   loadServices() {
@@ -60,6 +64,9 @@ export class CreaciongrupoComponent implements OnInit {
           console.error('Error al cargar servicios:', error);
           if (error.status === 0) {
             console.error('No se puede conectar al servidor. Verifica que el backend esté corriendo en puerto 3001');
+            this.sweetAlert.error('Error de conexión', 'No se puede conectar al servidor. Verifica que el backend esté funcionando.');
+          } else {
+            this.sweetAlert.error('Error', 'Hubo un problema al cargar los servicios disponibles.');
           }
         }
       });
@@ -71,15 +78,15 @@ export class CreaciongrupoComponent implements OnInit {
 
   onSubmit() {
     if (!this.groupData.name || !this.groupData.serviceType || !this.groupData.maxUsers || !this.groupData.costPerUser) {
-      alert('Por favor, completa todos los campos.');
+      this.sweetAlert.warning('Campos incompletos', 'Por favor, completa todos los campos obligatorios.');
       return;
     }
     if (!this.isValidEmail(this.groupData.accountEmail)) {
-      alert('Ingresa un correo válido para la cuenta del servicio.');
+      this.sweetAlert.error('Email inválido', 'Ingresa un correo válido para la cuenta del servicio.');
       return;
     }
     if (String(this.groupData.accountPassword).length < 6) {
-      alert('La contraseña de la cuenta debe tener al menos 6 caracteres.');
+      this.sweetAlert.error('Contraseña muy corta', 'La contraseña de la cuenta debe tener al menos 6 caracteres.');
       return;
     }
 
@@ -101,15 +108,26 @@ export class CreaciongrupoComponent implements OnInit {
     };
 
     this.http.post<{ id_grupo_suscripcion: number }>(`${environment.apiUrl}/api/grupos/crear`, payload)
-
       .subscribe(
         (response) => {
-          alert('Grupo creado exitosamente');
-          this.router.navigate(['/unirgrupo']);
+          this.sweetAlert.success('¡Grupo creado exitosamente!', 'Tu grupo ha sido creado correctamente. Serás redirigido a la página de inicio.').then(() => {
+            // Redirigir a la página de inicio en lugar de unirgrupo
+            this.router.navigate(['/']);
+          }).catch((error) => {
+            console.error('Error en navegación:', error);
+            // En caso de error, navegar directamente sin esperar
+            this.router.navigate(['/']);
+          });
         },
         (error) => {
-          alert('Hubo un error al crear el grupo.');
           console.error('Error:', error);
+          if (error.status === 409) {
+            this.sweetAlert.error('Error al crear grupo', 'Ya existe un grupo con ese nombre o configuración.');
+          } else if (error.status === 400) {
+            this.sweetAlert.error('Datos inválidos', 'Verifica que todos los datos estén correctos.');
+          } else {
+            this.sweetAlert.error('Error del servidor', 'Hubo un problema al crear el grupo. Inténtalo de nuevo.');
+          }
         }
       );
   }

@@ -8,7 +8,7 @@ import { UsuarioService } from '../services/usuario.service';
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [RouterModule],
+  imports: [RouterModule, DatePipe],
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.css']
 })
@@ -22,7 +22,7 @@ export class HeaderComponent implements OnInit {
   notificaciones: any[] = [];
   showPagosPopup = false;
   historialPagos: any[] = [];
-  datePipe: any;
+  datePipe = new DatePipe('es');
 
   constructor(
     private router: Router, 
@@ -110,15 +110,25 @@ export class HeaderComponent implements OnInit {
   // Obtener notificaciones del usuario
   cargarNotificaciones() {
     const userId = localStorage.getItem('userId');
+    console.log('Cargando notificaciones para usuario:', userId);
     if (userId) {
       this.http.get<any[]>(`${environment.apiUrl}/api/notificaciones/${userId}`)
-        .subscribe(data => {
-          // Formatear la fecha de cada notificación
-          this.notificaciones = data.map(n => ({
-            ...n,
-            fecha_envio_formateada: this.formatFecha(n.fecha_envio)
-          }));
+        .subscribe({
+          next: (data) => {
+            console.log('Notificaciones recibidas del servidor:', data);
+            // Formatear la fecha de cada notificación
+            this.notificaciones = data.map(n => ({
+              ...n,
+              fecha_envio_formateada: this.formatFecha(n.fecha_envio)
+            }));
+            console.log('Notificaciones formateadas:', this.notificaciones);
+          },
+          error: (error) => {
+            console.error('Error al cargar notificaciones:', error);
+          }
         });
+    } else {
+      console.log('No se encontró userId en localStorage');
     }
   }
 

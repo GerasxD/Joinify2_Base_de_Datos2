@@ -62,7 +62,12 @@ today: any;
 
   ngOnInit(): void {
     this.cargarHistorialPagos();
+    this.cargarGrupos();
+    this.cargarNotificaciones();
+    this.initializeStripe();
+  }
 
+  private cargarGrupos(): void {
     const usuarioId = localStorage.getItem('userId');
     if (!usuarioId) {
       this.errorMessage = 'Por favor, inicia sesión para ver tus grupos.';
@@ -94,9 +99,17 @@ today: any;
         },
         (error) => {
           console.error('Error al obtener los grupos:', error);
-          this.errorMessage = 'Error al cargar tus grupos. Intenta nuevamente más tarde.';
+          // Solo mostrar mensaje de error si es necesario, evitar alertas automáticas
+          if (error.status !== 200 && error.status !== 0) {
+            this.errorMessage = 'Error al cargar tus grupos. Intenta nuevamente más tarde.';
+          }
         }
       );
+  }
+
+  private cargarNotificaciones(): void {
+    const usuarioId = localStorage.getItem('userId');
+    if (!usuarioId) return;
 
     this.http.get<any[]>(`${environment.apiUrl}/api/notificaciones/vencimientos`)
       .subscribe(
@@ -110,15 +123,12 @@ today: any;
         },
         (error) => { 
           console.error('Error al obtener las notificaciones:', error); 
-          this.errorMessage = 'Error al cargar tus notificaciones.'; 
+          // Solo loggear el error, no mostrar alertas automáticas
         }
       );
 
-
      // Obtener las notificaciones inicialmente
-
      this.http.get<any[]>(`${environment.apiUrl}/api/notificaciones/vencimientos`)
-
      .subscribe(
        (notificaciones) => { 
          this.notificaciones = notificaciones.filter(n => n.userId === parseInt(usuarioId || '0'));
@@ -133,26 +143,26 @@ today: any;
        },
        (error) => { 
          console.error('Error al obtener las notificaciones:', error); 
-         this.errorMessage = 'Error al cargar tus notificaciones.'; 
+         // Solo loggear el error, no mostrar alertas automáticas
        }
      );
 
    // Llamada periódica cada 10 minutos (600,000 ms)
    this.notificacionesInterval = setInterval(() => {
-
      this.http.get<any[]>(`${environment.apiUrl}/api/notificaciones/vencimientos`)
-
        .subscribe(
          (notificaciones) => { 
            this.notificaciones = notificaciones.filter(n => n.userId === parseInt(usuarioId || '0')); 
          },
          (error) => { 
            console.error('Error al obtener las notificaciones:', error); 
-           this.errorMessage = 'Error al cargar tus notificaciones.'; 
+           // Solo loggear el error, no mostrar alertas automáticas
          }
        );
-   }, 60000);  // 10 minutos
-  
+   }, 600000);  // 10 minutos en milisegundos
+  }
+
+  private initializeStripe(): void {
 
 
     loadStripe('pk_test_51QTYY1KKAL9Zx73kVaH7pAwFyqaSPByJFrZCQKpfzLwRgE9WTWHx6lJxKfXkhK3dgOCBTFlmSGHjBUvtJJyOSM7r00PzjBxalJ')
@@ -243,11 +253,21 @@ today: any;
             monto: monto
           }).subscribe(
             (response) => {
-              this.sweetAlert.success('¡Pago exitoso!', 'El pago ha sido registrado correctamente.');
+              this.sweetAlert.success('¡Pago exitoso!', 'El pago ha sido registrado correctamente.').then(() => {
+                // Usar window.location.reload() como alternativa más segura
+                setTimeout(() => {
+                  window.location.reload();
+                }, 1000);
+              });
             },
             (error) => {
               console.error('Error al registrar el pago:', error);
-              this.sweetAlert.warning('Pago procesado', 'El pago fue procesado, pero hubo un problema al registrarlo.');
+              this.sweetAlert.warning('Pago procesado', 'El pago fue procesado, pero hubo un problema al registrarlo.').then(() => {
+                // Recargar la página para sincronizar el estado
+                setTimeout(() => {
+                  window.location.reload();
+                }, 1000);
+              });
             }
           );
         }
