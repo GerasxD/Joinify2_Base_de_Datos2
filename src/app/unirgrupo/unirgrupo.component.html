@@ -1,50 +1,166 @@
 <div class="unirgrupo-container">
   <h2 class="page-title">Unirse a un Grupo</h2>
 
-  <div class="groups-list">
-    <!-- Mostrar los grupos disponibles con espacio -->
-    @for (grupo of gruposDisponibles; track grupo) {
-      <div class="group-card">
-        <div class="group-card-header">
-          <h3>{{ grupo.name }}</h3>
-          <span class="service-type">{{ grupo.serviceType }}</span>
-        </div>
-        <div class="group-card-body">
-          <p><strong>Usuarios:</strong> {{ grupo.currentUsers }} / {{ grupo.maxUsers }}</p>
-          <p><strong>Costo por usuario:</strong> ${{ grupo.costPerUser }}</p>
-          <p><strong>Política de pago:</strong> {{ grupo.paymentPolicy }}</p>
-        </div>
-        <div class="group-card-footer">
-          <!-- Botón para unirse al grupo -->
-          @if (grupo.currentUsers < grupo.maxUsers) {
-            <button 
-              (click)="unirseAGrupo(grupo.id)"
-              style="
-              max-width: 200px;
-              padding: 10px 20px;
-              background-color: #920500;
-              color: white;
-              border: none;
-              border-radius: 6px;
-              font-family: 'Arial', sans-serif;
-              font-size: 15px;
-              font-weight: 600;
-              text-transform: uppercase;
-              letter-spacing: 0.8px;
-              cursor: pointer;
-              transition: all 0.3s ease;
-              box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
-              outline: none;
-              margin: 10px 0;">
-              Unirme al grupo
-          </button>
-          }
-          <!-- Mensaje si el grupo está lleno -->
-          @if (grupo.currentUsers >= grupo.maxUsers) {
-            <p class="full-group">Este grupo está lleno.</p>
+  <!-- Layout principal con sidebar y contenido -->
+  <div class="main-layout">
+    <!-- Área principal para grupos -->
+    <div class="content-area">
+      <!-- Información de resultados -->
+      <div *ngIf="filtroPlataformaActivo || terminoBusqueda" class="filter-info">
+        <span class="results-count">
+          <i class="fas fa-search"></i>
+          {{ gruposFiltrados.length }} grupo(s) encontrado(s)
+          <span *ngIf="plataformaSeleccionada" class="platform-term"> para {{ plataformaSeleccionada }}</span>
+          <span *ngIf="terminoBusqueda" class="search-term"> con "{{ terminoBusqueda }}"</span>
+        </span>
+      </div>
+
+      <!-- Mensaje si no hay resultados -->
+      <div *ngIf="(filtroPlataformaActivo || terminoBusqueda) && gruposFiltrados.length === 0" class="no-results">
+        <i class="fas fa-search"></i>
+        <h3>No se encontraron grupos</h3>
+        <p *ngIf="terminoBusqueda && !filtroPlataformaActivo">
+          No hay grupos disponibles que coincidan con "{{ terminoBusqueda }}".
+        </p>
+        <p *ngIf="!terminoBusqueda && filtroPlataformaActivo">
+          No hay grupos disponibles para {{ plataformaSeleccionada }}.
+        </p>
+        <p *ngIf="terminoBusqueda && filtroPlataformaActivo">
+          No hay grupos de {{ plataformaSeleccionada }} que coincidan con "{{ terminoBusqueda }}".
+        </p>
+        <button (click)="limpiarFiltros()" class="btn-clear-results">
+          <i class="fas fa-refresh"></i>
+          Ver todos los grupos
+        </button>
+      </div>
+
+      <!-- Contenedor épico para grupos filtrados -->
+      <div class="groups-list">
+        <div *ngIf="gruposFiltrados.length > 0" class="grupos-grid">
+          @for (grupo of gruposFiltrados; track grupo; let i = $index) {
+            <div class="grupo-card" [style.--card-index]="i">
+              <div class="card-content">
+                <div class="group-card-header">
+                  <h5>{{ grupo.name }}</h5>
+                  <span class="service-type">{{ grupo.serviceType }}</span>
+                </div>
+                <div class="group-card-body">
+                  <p><strong>Usuarios:</strong> {{ grupo.currentUsers }} / {{ grupo.maxUsers }}</p>
+                  <p><strong>Costo por usuario:</strong> ${{ grupo.costPerUser }}</p>
+                  <p><strong>Política de pago:</strong> {{ grupo.paymentPolicy }}</p>
+                </div>
+                <div class="group-card-footer">
+                  <!-- Botón épico para unirse al grupo -->
+                  @if (grupo.currentUsers < grupo.maxUsers) {
+                    <button 
+                      (click)="unirseAGrupo(grupo.id)"
+                      class="btn btn-primary">
+                      <i class="fas fa-users"></i>
+                      Unirme al grupo
+                  </button>
+                  }
+                  <!-- Mensaje si el grupo está lleno -->
+                  @if (grupo.currentUsers >= grupo.maxUsers) {
+                    <p class="full-group">
+                      <i class="fas fa-lock"></i>
+                      Este grupo está lleno.
+                    </p>
+                  }
+                </div>
+              </div>
+            </div>
           }
         </div>
       </div>
-    }
+    </div>
+
+    <!-- Barra lateral derecha para filtros -->
+    <div class="sidebar">
+      <!-- Buscador de grupos -->
+      <div class="search-container">
+        <h3 class="sidebar-title">
+          <i class="fas fa-search"></i>
+          Buscar Grupos
+        </h3>
+        <div class="search-box">
+          <i class="fas fa-search search-icon"></i>
+          <input
+            type="text"
+            [(ngModel)]="terminoBusqueda"
+            (input)="filtrarPorBusqueda()"
+            placeholder="Buscar por nombre o servicio..."
+            class="search-input"
+          />
+          <button *ngIf="terminoBusqueda" (click)="limpiarFiltros()" class="clear-search-btn">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Filtros de plataforma -->
+      <div class="filter-container">
+        <div class="filter-box">
+          <h3 class="filter-title">
+            <i class="fas fa-tv"></i>
+            Filtrar por Plataforma
+          </h3>
+          
+          <!-- Selector de plataforma -->
+          <div class="platform-selector">
+            <label for="platformSelect" class="selector-label">Selecciona una plataforma:</label>
+            <select 
+              id="platformSelect"
+              [(ngModel)]="plataformaSeleccionada" 
+              (change)="aplicarFiltroPlataforma()"
+              class="platform-select"
+            >
+              <option value="">Todas las plataformas</option>
+              <option *ngFor="let plataforma of plataformasDisponibles" [value]="plataforma">
+                {{ plataforma }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Plataformas populares -->
+          <div class="popular-platforms">
+            <h4 class="popular-title">Plataformas Populares:</h4>
+            <div class="platform-buttons">
+              <button (click)="seleccionarPlataforma('Netflix')" class="platform-btn netflix">
+                <i class="fas fa-play"></i>
+                Netflix
+              </button>
+              <button (click)="seleccionarPlataforma('Disney Plus')" class="platform-btn disney">
+                <i class="fas fa-star"></i>
+                Disney Plus
+              </button>
+              <button (click)="seleccionarPlataforma('HBO Max')" class="platform-btn hbo">
+                <i class="fas fa-film"></i>
+                HBO Max
+              </button>
+              <button (click)="seleccionarPlataforma('Amazon Prime')" class="platform-btn prime">
+                <i class="fas fa-shopping-cart"></i>
+                Amazon Prime
+              </button>
+              <button (click)="seleccionarPlataforma('Apple TV')" class="platform-btn apple">
+                <i class="fab fa-apple"></i>
+                Apple TV
+              </button>
+              <button (click)="seleccionarPlataforma('YouTube Premium')" class="platform-btn youtube">
+                <i class="fab fa-youtube"></i>
+                YouTube Premium
+              </button>
+            </div>
+          </div>
+
+          <!-- Botón para limpiar filtros -->
+          <div class="filter-actions">
+            <button (click)="limpiarFiltros()" class="clear-btn" *ngIf="filtroPlataformaActivo || plataformaSeleccionada">
+              <i class="fas fa-times"></i>
+              Limpiar Filtros
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
