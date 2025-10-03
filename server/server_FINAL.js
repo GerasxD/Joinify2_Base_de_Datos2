@@ -41,7 +41,7 @@ const pool = mysql.createPool({
     host: 'localhost',
     user: 'root',
     password: 'Maicgio323-2',
-    database: 'joinify_2l',
+    database: 'joinify_DB',
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
