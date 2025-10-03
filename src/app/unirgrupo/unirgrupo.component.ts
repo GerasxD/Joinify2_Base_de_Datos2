@@ -3,10 +3,12 @@ import { Component, OnInit } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { environment } from '../app.config';
 import { SweetAlertService } from '../services/sweet-alert.service';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-unirgrupo',
-  imports: [RouterModule],
+  imports: [RouterModule, FormsModule, CommonModule],
   templateUrl: './unirgrupo.component.html',
   styleUrl: './unirgrupo.component.css'
 })
@@ -14,6 +16,66 @@ import { SweetAlertService } from '../services/sweet-alert.service';
 export class UnirGrupoComponent implements OnInit {
 
   gruposDisponibles: any[] = [];
+  gruposFiltrados: any[] = [];
+  
+  // Propiedades para el buscador
+  terminoBusqueda: string = '';
+  
+  // Propiedades para el filtro de plataforma
+  plataformaSeleccionada: string = '';
+  filtroPlataformaActivo: boolean = false;
+  
+  // Lista de todas las plataformas disponibles
+  plataformasDisponibles: string[] = [
+    'Netflix',
+    'Disney Plus', 
+    'Amazon Prime',
+    'HBO Max',
+    'Apple TV',
+    'Hulu',
+    'Paramount+',
+    'Star+',
+    'Crunchyroll',
+    'YouTube Premium',
+    'Tubi',
+    'Pluto TV',
+    'Rakuten TV',
+    'Mubi',
+    'Funimation',
+    'DAZN',
+    'Plex',
+    'Kanopy',
+    'Acorn TV',
+    'CuriosityStream',
+    'Shudder',
+    'Discovery+',
+    'BritBox',
+    'Sundance Now',
+    'FuboTV',
+    'Xumo Play',
+    'PopcornFlix',
+    'Redbox Free Live TV',
+    'Vix',
+    'Sling TV',
+    'The Roku Channel',
+    'Hayu',
+    'Crackle',
+    'Topic',
+    'AMC Presents Plus',
+    'Binge',
+    'Shahid',
+    'Cinepolis kLIC',
+    'Claro Video',
+    'Televisa Univision+',
+    'AMCT',
+    'StarzPlay',
+    'Vix Cine Now',
+    'Discovery Familia GO',
+    'Claro Now',
+    'MagellanTV',
+    'Pantaya Movies Now',
+    'Pantaya'
+  ];
 
   constructor(
     private http: HttpClient, 
@@ -48,6 +110,9 @@ export class UnirGrupoComponent implements OnInit {
               ? this.calcularPoliticaPago(grupo.fecha_inicio, grupo.fecha_vencimiento)
               : ''
           }));
+          
+          // Inicializar grupos filtrados
+          this.gruposFiltrados = [...this.gruposDisponibles];
         },
         error => {
           console.error('Error al obtener los grupos', error);
@@ -96,6 +161,52 @@ export class UnirGrupoComponent implements OnInit {
             this.sweetAlert.error('Error', 'Error al verificar o actualizar la disponibilidad.');
           }
         );
+    }
+    
+    // Métodos para el buscador
+    filtrarPorBusqueda(): void {
+      this.aplicarTodosFiltros();
+    }
+    
+    // Métodos para filtrar por plataforma
+    aplicarFiltroPlataforma(): void {
+      this.filtroPlataformaActivo = true;
+      this.aplicarTodosFiltros();
+    }
+    
+    // Método combinado que aplica búsqueda y filtros de plataforma
+    aplicarTodosFiltros(): void {
+      let gruposFiltrados = [...this.gruposDisponibles];
+      
+      // Aplicar filtro de búsqueda
+      if (this.terminoBusqueda.trim()) {
+        gruposFiltrados = gruposFiltrados.filter(grupo =>
+          grupo.name.toLowerCase().includes(this.terminoBusqueda.toLowerCase()) ||
+          grupo.serviceType.toLowerCase().includes(this.terminoBusqueda.toLowerCase())
+        );
+      }
+      
+      // Aplicar filtro de plataforma
+      if (this.plataformaSeleccionada) {
+        gruposFiltrados = gruposFiltrados.filter(grupo => 
+          grupo.serviceType.toLowerCase() === this.plataformaSeleccionada.toLowerCase()
+        );
+      }
+      
+      this.gruposFiltrados = gruposFiltrados;
+    }
+    
+    // Método para seleccionar plataforma predefinida
+    seleccionarPlataforma(plataforma: string): void {
+      this.plataformaSeleccionada = plataforma;
+      this.aplicarFiltroPlataforma();
+    }
+    
+    limpiarFiltros(): void {
+      this.terminoBusqueda = '';
+      this.plataformaSeleccionada = '';
+      this.filtroPlataformaActivo = false;
+      this.gruposFiltrados = [...this.gruposDisponibles];
     }
     
     calcularPoliticaPago(fechaInicio: string, fechaVencimiento: string): string {

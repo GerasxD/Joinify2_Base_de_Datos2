@@ -109,43 +109,70 @@ function encryptText(text) {
 
 function decryptText(encryptedData) {
     // Validar entrada
-    if (!encryptedData || typeof encryptedData !== 'string') {
-        console.warn('decryptText: datos inválidos', typeof encryptedData, encryptedData);
+    if (!encryptedData || typeof encryptedData !== 'string' || encryptedData.trim() === '') {
+        console.warn('decryptText: datos inválidos o vacíos:', {
+            type: typeof encryptedData, 
+            value: encryptedData,
+            length: encryptedData ? encryptedData.length : 0
+        });
         return 'No disponible';
+    }
+    
+    // Si la contraseña parece ser texto plano (sin formato de encriptación)
+    if (!encryptedData.includes(':')) {
+        console.log('decryptText: datos sin formato de encriptación, devolviendo como texto plano:', encryptedData);
+        return encryptedData; // Asumir que ya está desencriptado
     }
     
     try {
         const algorithm = 'aes-256-cbc';
         const key = crypto.scryptSync(secretKey, 'salt', 32);
         
-        // Verificar formato
-        if (!encryptedData.includes(':')) {
-            console.warn('decryptText: formato inválido (sin ":")', encryptedData);
-            return encryptedData; // Posiblemente ya esté desencriptado
-        }
-        
         const parts = encryptedData.split(':');
-        if (parts.length !== 2) {
-            console.warn('decryptText: formato inválido (partes)', parts.length);
-            return 'Error de formato';
+        console.log('decryptText: procesando partes:', parts.length, parts);
+        
+        // Manejar diferentes formatos de encriptación
+        let iv, encryptedText;
+        
+        if (parts.length === 2) {
+            // Formato nuevo: iv:encrypted
+            iv = Buffer.from(parts[0], 'hex');
+            encryptedText = parts[1];
+        } else if (parts.length === 3) {
+            // Formato legacy que parece estar en tu BD: random:iv:encrypted
+            iv = Buffer.from(parts[1], 'hex');
+            encryptedText = parts[2];
+        } else {
+            console.warn('decryptText: formato inválido, número de partes:', parts.length);
+            return 'Formato de encriptación inválido';
         }
         
-        const iv = Buffer.from(parts[0], 'hex');
-        const encryptedText = parts[1];
-        
-        if (!encryptedText) {
-            console.warn('decryptText: texto encriptado vacío');
+        // Validar que tenemos datos válidos
+        if (!encryptedText || encryptedText.trim() === '') {
+            console.warn('decryptText: texto encriptado vacío después del parsing');
             return 'No disponible';
         }
+        
+        if (!iv || iv.length !== 16) {
+            console.warn('decryptText: IV inválido, longitud:', iv ? iv.length : 0);
+            return 'Vector de inicialización inválido';
+        }
+        
+        console.log('decryptText: intentando desencriptar con IV longitud:', iv.length, 'texto longitud:', encryptedText.length);
         
         const decipher = crypto.createDecipheriv(algorithm, key, iv);
         let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
         decrypted += decipher.final('utf8');
         
+        console.log('decryptText: desencriptación exitosa, resultado longitud:', decrypted.length);
         return decrypted;
     } catch (error) {
-        console.error('Error al desencriptar:', error.message);
-        return 'No disponible';
+        console.error('Error al desencriptar:', {
+            message: error.message,
+            stack: error.stack,
+            input: encryptedData
+        });
+        return 'Error de desencriptación';
     }
 }
 
@@ -680,6 +707,41 @@ app.put('/api/usuarios/:id/password', async (req, res) => {
 
 // ========== FIN ENDPOINTS CONFIGURACIÓN USUARIO ==========
 
+// ========== ENDPOINT TEMPORAL PARA DEPURAR ENCRIPTACIÓN ==========
+app.get('/api/debug/grupos/:groupId', async (req, res) => {
+    const { groupId } = req.params;
+    try {
+        const [rows] = await pool.query(
+            'SELECT id_grupo_suscripcion, nombre_grupo, correo_cuenta, contrasena_cuenta FROM grupo_suscripcion WHERE id_grupo_suscripcion = ?',
+            [groupId]
+        );
+        
+        if (rows.length === 0) {
+            return res.status(404).json({ message: 'Grupo no encontrado' });
+        }
+        
+        const grupo = rows[0];
+        console.log('DEBUG - Datos raw de la BD:', grupo);
+        
+        const resultado = {
+            id: grupo.id_grupo_suscripcion,
+            nombre: grupo.nombre_grupo,
+            correo_raw: grupo.correo_cuenta,
+            contrasena_raw: grupo.contrasena_cuenta,
+            contrasena_tipo: typeof grupo.contrasena_cuenta,
+            contrasena_length: grupo.contrasena_cuenta ? grupo.contrasena_cuenta.length : 0,
+            contrasena_desencriptada: grupo.contrasena_cuenta ? decryptText(grupo.contrasena_cuenta) : 'NULL'
+        };
+        
+        res.json(resultado);
+    } catch (err) {
+        console.error('Error en debug:', err);
+        res.status(500).json({ message: 'Error en debug', error: err.message });
+    }
+});
+
+// ========== FIN ENDPOINT TEMPORAL ==========
+
 // Salir de un grupo
 app.delete('/api/grupos/salir/:groupId/:userId', async (req, res) => {
     const { groupId, userId } = req.params;
@@ -732,7 +794,37 @@ app.get('/api/grupos/:groupId/credenciales', async (req, res) => {
       'SELECT 1 FROM usuario_grupo WHERE id_usuario = ? AND id_grupo_suscripcion = ? LIMIT 1',
       [userId, groupId]
     );
-    if (m.length === 0) return res.status(403).json({ message: 'No autorizado' });
+    if (m.length === 0) return res.status(403).json({ message: 'No autorizado - No eres miembro de este grupo' });
+
+    // Verificar si es el creador del grupo o si ha pagado
+    const [grupoInfo] = await pool.query(
+      'SELECT id_creador FROM grupo_suscripcion WHERE id_grupo_suscripcion = ?',
+      [groupId]
+    );
+    
+    let puedeVerCredenciales = false;
+    
+    // Si es el creador, puede ver las credenciales
+    if (grupoInfo.length > 0 && grupoInfo[0].id_creador === Number(userId)) {
+      puedeVerCredenciales = true;
+    } else {
+      // Si no es el creador, verificar si ha pagado
+      const [pagos] = await pool.query(
+        `SELECT 1 FROM historial_pagos hp 
+         JOIN pago p ON hp.id_pago = p.id_pago 
+         WHERE hp.id_grupo_suscripcion = ? AND p.id_usuario = ? LIMIT 1`,
+        [groupId, userId]
+      );
+      if (pagos.length > 0) puedeVerCredenciales = true;
+    }
+
+    if (!puedeVerCredenciales) {
+      return res.status(403).json({ 
+        message: 'No autorizado - Debes realizar el pago correspondiente para acceder a las credenciales',
+        correoCuenta: null,
+        passwordCuenta: 'Debes pagar para ver las credenciales'
+      });
+    }
 
     // Obtén credenciales
     const [rows] = await pool.query(
@@ -746,7 +838,7 @@ app.get('/api/grupos/:groupId/credenciales', async (req, res) => {
 
     res.json({ correoCuenta: correo, passwordCuenta: password });
   } catch (err) {
-    console.error(err);
+    console.error('Error al obtener credenciales:', err);
     res.status(500).json({ message: 'Error al obtener credenciales' });
   }
 });

@@ -1,79 +1,119 @@
-<main>
-    <section class="contact-section">
-        <div class="container">
-            <div class="contact-grid">
-                <div class="contact-info">
-                    <h3>Información de Contacto</h3>
-                    <div class="info-items">
-                        <div class="info-item">
-                            <i class="fas fa-map-marker-alt"></i>
-                            <div>
-                                <h4>Ubicación</h4>
-                                <p>Ciudad, País</p>
-                            </div>
-                        </div>
-                        <div class="info-item">
-                            <i class="fas fa-phone"></i>
-                            <div>
-                                <h4>Teléfono</h4>
-                                <p>+1 234 567 890</p>
-                            </div>
-                        </div>
-                        <div class="info-item">
-                            <i class="fas fa-envelope"></i>
-                            <div>
-                                <h4>Email</h4>
-                                <p>contactojoinify.com</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="social-links">
-                        <a href="#" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
-                        <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
-                        <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a>
-                        <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-                    </div>
+<main class="contact-main" role="main">
+  <section class="contact-section">
+    <div class="container">
+      <!-- Header -->
+      <div class="contact-header">
+        <h1 class="contact-title">Contáctanos</h1>
+        <p class="contact-subtitle">
+          Estamos aquí para ayudarte. Conéctate con nosotros y obtén respuesta a tus
+          consultas de manera rápida y profesional.
+        </p>
+      </div>
+
+      <div class="contact-grid">
+        <!-- Panel izquierdo -->
+        <aside class="contact-info-panel" aria-label="Información de contacto">
+          <h2 class="section-title">
+            <span class="title-marker" aria-hidden="true"></span>
+            Información de Contacto
+          </h2>
+
+          <ul class="contact-info-list" role="list">
+            <li class="contact-info-item">
+              <div class="icon-box"><i class="fas fa-location-dot" aria-hidden="true"></i></div>
+              <div class="info-details">
+                <h3>Ubicación</h3>
+                <p>Aguascalientes, México</p>
+              </div>
+            </li>
+
+            <li class="contact-info-item">
+              <div class="icon-box"><i class="fas fa-phone" aria-hidden="true"></i></div>
+              <div class="info-details">
+                <h3>Teléfono</h3>
+                <p><a href="tel:+524491234567">+52 449 123 4567</a></p>
+              </div>
+            </li>
+
+            <li class="contact-info-item">
+              <div class="icon-box"><i class="fas fa-envelope" aria-hidden="true"></i></div>
+              <div class="info-details">
+                <h3>Email</h3>
+                <p><a href="mailto:contacto&#64;joinify.com">contacto&#64;joinify.com</a></p>
+              </div>
+            </li>
+
+            <li class="contact-info-item">
+              <div class="icon-box"><i class="fas fa-clock" aria-hidden="true"></i></div>
+              <div class="info-details">
+                <h3>Horario de atención</h3>
+                <p>Lun - Vie: 9:00 AM - 6:00 PM</p>
+              </div>
+            </li>
+          </ul>
+
+          <h2 class="section-title">
+            <span class="title-marker" aria-hidden="true"></span>
+            Síguenos
+          </h2>
+
+          <div class="social-links-grid">
+            <a href="#" aria-label="Facebook" class="social-link fb"><i class="fab fa-facebook-f"></i></a>
+            <a href="#" aria-label="X/Twitter" class="social-link tw"><i class="fab fa-twitter"></i></a>
+            <a href="#" aria-label="LinkedIn" class="social-link in"><i class="fab fa-linkedin-in"></i></a>
+            <a href="#" aria-label="Instagram" class="social-link ig"><i class="fab fa-instagram"></i></a>
+          </div>
+        </aside>
+
+        <!-- Panel derecho (formulario) -->
+        <div class="contact-form-panel">
+          <h2 class="form-title">Envíanos un mensaje</h2>
+          <p class="form-subtitle">Completa el formulario y te responderemos lo antes posible.</p>
+
+          <form id="contactForm" class="professional-form" action="#" method="POST" novalidate>
+            <div class="form-row">
+              <div class="input-group">
+                <label for="name">Nombre completo *</label>
+                <div class="input-container">
+                  <i class="fas fa-user input-icon" aria-hidden="true"></i>
+                  <input id="name" name="name" type="text" required placeholder="Tu nombre completo" autocomplete="name" />
                 </div>
+              </div>
 
-                <div class="contact-form-container">
-                    <form id="contactForm" class="contact-form" action="#" method="POST">
-                        <div class="form-header">
-                            <h3>Envíanos un mensaje</h3>
-                            <p>Completa el formulario y te responderemos lo antes posible.</p>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="name">Nombre completo</label>
-                            <input type="text" id="name" name="name" required 
-                                   placeholder="Ingresa tu nombre completo">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="email">Correo electrónico</label>
-                            <input type="email" id="email" name="email" required
-                                   placeholder="ejemplo@correo.com">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="subject">Asunto</label>
-                            <input type="text" id="subject" name="subject" required
-                                   placeholder="¿Sobre qué nos quieres contactar?">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="message">Mensaje</label>
-                            <textarea id="message" name="message" required
-                                      placeholder="Escribe tu mensaje aquí..."></textarea>
-                        </div>
-
-                        <div class="form-group">
-                            <button type="submit" class="btn-submit">
-                                <i class="fas fa-paper-plane"></i> Enviar mensaje
-                            </button>
-                        </div>
-                    </form>
+              <div class="input-group">
+                <label for="email">Correo electrónico *</label>
+                <div class="input-container">
+                  <i class="fas fa-envelope input-icon" aria-hidden="true"></i>
+                  <input id="email" name="email" type="email" required placeholder="tu@email.com" autocomplete="email" />
                 </div>
+              </div>
             </div>
+
+            <div class="input-group">
+              <label for="subject">Asunto *</label>
+              <div class="input-container">
+                <i class="fas fa-tag input-icon" aria-hidden="true"></i>
+                <input id="subject" name="subject" type="text" required placeholder="¿Sobre qué nos quieres contactar?" />
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label for="message">Mensaje *</label>
+              <div class="input-container textarea-container">
+                <i class="fas fa-comment input-icon" aria-hidden="true"></i>
+                <textarea id="message" name="message" required placeholder="Escribe tu mensaje aquí..." rows="6"></textarea>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="submit-button">
+                <i class="fas fa-paper-plane" aria-hidden="true"></i>
+                <span>Enviar mensaje</span>
+              </button>
+            </div>
+          </form>
         </div>
-    </section>
+      </div>
+    </div>
+  </section>
 </main>
