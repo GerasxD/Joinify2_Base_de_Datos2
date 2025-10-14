@@ -352,6 +352,8 @@ app.get('/api/grupos/usuario', async (req, res) => {
 
 app.post('/api/grupos/unirse', async (req, res) => {
     const { groupId, userId } = req.body;
+    console.log('🔔 [UNIRSE GRUPO] Intento de unirse:', { groupId, userId });
+    
     if (!groupId || !userId) return res.status(400).json({ message: 'Datos faltantes' });
 
     try {
@@ -362,24 +364,48 @@ app.post('/api/grupos/unirse', async (req, res) => {
             'INSERT INTO usuario_grupo (id_usuario, id_grupo_suscripcion, rol) VALUES (?, ?, ?)',
             [userId, groupId, 'Miembro']
         );
+        console.log('✅ [UNIRSE GRUPO] Usuario agregado al grupo');
 
-        const [grupo] = await pool.query('SELECT id_creador, num_integrantes FROM grupo_suscripcion WHERE id_grupo_suscripcion = ?', [groupId]);
+        const [grupo] = await pool.query('SELECT id_creador, num_integrantes, nombre_grupo FROM grupo_suscripcion WHERE id_grupo_suscripcion = ?', [groupId]);
         const adminId = grupo[0]?.id_creador;
         const maxUsers = grupo[0]?.num_integrantes;
+        const nombreGrupo = grupo[0]?.nombre_grupo;
 
-        if (adminId && adminId !== userId) {
-            await pool.query('INSERT INTO notificacion (id_usuario, mensaje, fecha_envio, estado) VALUES (?, ?, CURDATE(), ?)', [adminId, 'Nuevo integrante añadido.', 'pendiente']);
+        // Notificar al admin que se unió un nuevo integrante
+        if (adminId && adminId !== parseInt(userId)) {
+            const mensajeAdmin = 'Nuevo integrante añadido.';
+            const [notifResult] = await pool.query(
+                'INSERT INTO notificacion (id_usuario, mensaje, fecha_envio, estado) VALUES (?, ?, NOW(), ?)', 
+                [adminId, mensajeAdmin, 'pendiente']
+            );
+            console.log('🔔 [UNIRSE GRUPO] Notificación enviada al admin:', { 
+                id_notificacion: notifResult.insertId, 
+                adminId, 
+                mensaje: mensajeAdmin 
+            });
         }
 
+        // Verificar si el grupo está lleno
         const [usuariosActuales] = await pool.query('SELECT COUNT(*) AS total FROM usuario_grupo WHERE id_grupo_suscripcion = ?', [groupId]);
         const totalUsuarios = usuariosActuales[0]?.total;
 
         if (totalUsuarios >= maxUsers && adminId) {
-            await pool.query('INSERT INTO notificacion (id_usuario, mensaje, fecha_envio, estado) VALUES (?, ?, CURDATE(), ?)', [adminId, 'Grupo lleno.', 'pendiente']);
+            const mensajeGrupoLleno = 'Grupo lleno.';
+            const [notifLlenoResult] = await pool.query(
+                'INSERT INTO notificacion (id_usuario, mensaje, fecha_envio, estado) VALUES (?, ?, NOW(), ?)', 
+                [adminId, mensajeGrupoLleno, 'pendiente']
+            );
+            console.log('🔔 [UNIRSE GRUPO] Notificación de grupo lleno enviada:', { 
+                id_notificacion: notifLlenoResult.insertId, 
+                adminId, 
+                totalUsuarios, 
+                maxUsers 
+            });
         }
 
         res.status(200).json({ message: 'Te has unido al grupo correctamente' });
     } catch (err) {
+        console.error('❌ [UNIRSE GRUPO] Error:', err);
         res.status(500).json({ message: 'Error al unirse al grupo' });
     }
 });
@@ -447,31 +473,61 @@ app.post('/api/pagos/simular', async (req, res) => {
 app.post('/api/pagos/confirmar', async (req, res) => {
     try {
         const { userId, groupId, monto } = req.body;
+        console.log('🔔 [CONFIRMAR PAGO] Iniciando confirmación de pago:', { userId, groupId, monto });
+        
         if (!userId || !groupId || !monto) return res.status(400).json({ message: 'Faltan datos obligatorios' });
 
-        const [pagoResult] = await pool.query('INSERT INTO pago (id_usuario, monto, fecha_pago) VALUES (?, ?, CURDATE())', [userId, monto]);
+        // Registrar el pago
+        const [pagoResult] = await pool.query(
+            'INSERT INTO pago (id_usuario, monto, fecha_pago) VALUES (?, ?, NOW())', 
+            [userId, monto]
+        );
         const id_pago = pagoResult.insertId;
+        console.log('✅ [CONFIRMAR PAGO] Pago registrado con ID:', id_pago);
 
-        await pool.query('INSERT INTO historial_pagos (id_pago, id_grupo_suscripcion) VALUES (?, ?)', [id_pago, groupId]);
+        // Registrar en historial de pagos
+        await pool.query(
+            'INSERT INTO historial_pagos (id_pago, id_grupo_suscripcion) VALUES (?, ?)', 
+            [id_pago, groupId]
+        );
 
+        // Notificar al usuario que realizó el pago
         const mensajeUsuario = 'Tu pago fue recibido.';
-        if (esMensajePermitido(mensajeUsuario)) {
-            await pool.query('INSERT INTO notificacion (id_usuario, mensaje, fecha_envio, estado) VALUES (?, ?, CURDATE(), ?)', [userId, mensajeUsuario, 'pendiente']);
-        }
+        const [notifUsuarioResult] = await pool.query(
+            'INSERT INTO notificacion (id_usuario, mensaje, fecha_envio, estado) VALUES (?, ?, NOW(), ?)', 
+            [userId, mensajeUsuario, 'pendiente']
+        );
+        console.log('🔔 [CONFIRMAR PAGO] Notificación enviada al usuario:', { 
+            id_notificacion: notifUsuarioResult.insertId, 
+            userId, 
+            mensaje: mensajeUsuario 
+        });
 
-        const [adminRows] = await pool.query('SELECT id_creador FROM grupo_suscripcion WHERE id_grupo_suscripcion = ?', [groupId]);
+        // Obtener información del grupo y admin
+        const [adminRows] = await pool.query(
+            'SELECT id_creador, nombre_grupo FROM grupo_suscripcion WHERE id_grupo_suscripcion = ?', 
+            [groupId]
+        );
         const adminId = adminRows[0]?.id_creador;
+        const nombreGrupo = adminRows[0]?.nombre_grupo;
 
-        if (adminId && adminId !== userId) {
+        // Notificar al admin que recibió un pago (si no es el mismo usuario)
+        if (adminId && adminId !== parseInt(userId)) {
             const mensajeAdmin = 'Recibiste pago.';
-            if (esMensajePermitido(mensajeAdmin)) {
-                await pool.query('INSERT INTO notificacion (id_usuario, mensaje, fecha_envio, estado) VALUES (?, ?, CURDATE(), ?)', [adminId, mensajeAdmin, 'pendiente']);
-            }
+            const [notifAdminResult] = await pool.query(
+                'INSERT INTO notificacion (id_usuario, mensaje, fecha_envio, estado) VALUES (?, ?, NOW(), ?)', 
+                [adminId, mensajeAdmin, 'pendiente']
+            );
+            console.log('🔔 [CONFIRMAR PAGO] Notificación enviada al admin:', { 
+                id_notificacion: notifAdminResult.insertId, 
+                adminId, 
+                mensaje: mensajeAdmin 
+            });
         }
 
         res.json({ message: 'Pago confirmado y notificaciones enviadas.' });
     } catch (err) {
-        console.error(err);
+        console.error('❌ [CONFIRMAR PAGO] Error:', err);
         res.status(400).json({ message: err.message || 'Error al confirmar el pago' });
     }
 });
@@ -479,16 +535,29 @@ app.post('/api/pagos/confirmar', async (req, res) => {
 // ✅ Endpoint para mostrar notificaciones personales
 app.get('/api/notificaciones/:userId', async (req, res) => {
     const userId = req.params.userId;
+    console.log('🔔 [GET NOTIFICACIONES] Obteniendo notificaciones para userId:', userId);
+    
     try {
         const [notificaciones] = await pool.query(
             `SELECT id_notificacion, mensaje, fecha_envio, estado 
              FROM notificacion 
              WHERE id_usuario = ? AND estado != 'eliminada'
-             ORDER BY fecha_envio DESC`, [userId]
+             ORDER BY fecha_envio DESC`, 
+            [userId]
         );
+        
+        console.log('📬 [GET NOTIFICACIONES] Total de notificaciones encontradas:', notificaciones.length);
+        if (notificaciones.length > 0) {
+            console.log('📬 [GET NOTIFICACIONES] Notificaciones:', notificaciones.map(n => ({
+                id: n.id_notificacion,
+                mensaje: n.mensaje,
+                estado: n.estado
+            })));
+        }
+        
         res.json(notificaciones);
     } catch (err) {
-        console.error('Error al obtener notificaciones:', err);
+        console.error('❌ [GET NOTIFICACIONES] Error al obtener notificaciones:', err);
         res.status(500).json({ message: 'Error al obtener notificaciones' });
     }
 });
@@ -496,13 +565,18 @@ app.get('/api/notificaciones/:userId', async (req, res) => {
 // Marcar notificación como leída
 app.put('/api/notificaciones/:id_notificacion/leida', async (req, res) => {
   const { id_notificacion } = req.params;
+  console.log('🔔 [MARCAR LEÍDA] Marcando notificación como leída:', id_notificacion);
+  
   try {
-    await pool.query(
+    const [result] = await pool.query(
       'UPDATE notificacion SET estado = ? WHERE id_notificacion = ?',
       ['leida', id_notificacion]
     );
+    
+    console.log('✅ [MARCAR LEÍDA] Notificación actualizada, filas afectadas:', result.affectedRows);
     res.json({ message: 'Notificación marcada como leída' });
   } catch (err) {
+    console.error('❌ [MARCAR LEÍDA] Error:', err);
     res.status(500).json({ message: 'Error al marcar como leída' });
   }
 });
@@ -510,13 +584,18 @@ app.put('/api/notificaciones/:id_notificacion/leida', async (req, res) => {
 // Eliminar notificación (estado = 'eliminada')
 app.put('/api/notificaciones/:id_notificacion/eliminar', async (req, res) => {
   const { id_notificacion } = req.params;
+  console.log('🔔 [ELIMINAR NOTIF] Eliminando notificación:', id_notificacion);
+  
   try {
-    await pool.query(
+    const [result] = await pool.query(
       'UPDATE notificacion SET estado = ? WHERE id_notificacion = ?',
       ['eliminada', id_notificacion]
     );
+    
+    console.log('✅ [ELIMINAR NOTIF] Notificación eliminada, filas afectadas:', result.affectedRows);
     res.json({ message: 'Notificación eliminada' });
   } catch (err) {
+    console.error('❌ [ELIMINAR NOTIF] Error:', err);
     res.status(500).json({ message: 'Error al eliminar la notificación' });
   }
 });
@@ -544,15 +623,24 @@ app.get('/api/historial_pagos', async (req, res) => {
 
 // ✅ Función para notificar a todos los miembros del grupo
 async function notificarMiembrosGrupo(pool, grupoId, mensaje) {
+  console.log('🔔 [NOTIFICAR MIEMBROS] Notificando a miembros del grupo:', grupoId, 'Mensaje:', mensaje);
+  
   const [miembros] = await pool.query(
     'SELECT id_usuario FROM usuario_grupo WHERE id_grupo_suscripcion = ?',
     [grupoId]
   );
+  
+  console.log('📬 [NOTIFICAR MIEMBROS] Total de miembros a notificar:', miembros.length);
+  
   for (const miembro of miembros) {
-    await pool.query(
-      'INSERT INTO notificacion (id_usuario, mensaje, fecha_envio, estado) VALUES (?, ?, CURDATE(), ?)',
+    const [result] = await pool.query(
+      'INSERT INTO notificacion (id_usuario, mensaje, fecha_envio, estado) VALUES (?, ?, NOW(), ?)',
       [miembro.id_usuario, mensaje, 'pendiente']
     );
+    console.log('✅ [NOTIFICAR MIEMBROS] Notificación enviada:', { 
+      id_notificacion: result.insertId, 
+      id_usuario: miembro.id_usuario 
+    });
   }
 }
 
