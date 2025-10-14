@@ -258,6 +258,52 @@
     border-color: rgba(244, 67, 54, 0.5);
   }
   
+  /* Estilos para el mensaje de información del costo */
+  .cost-info {
+    display: block;
+    margin-top: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: rgba(255,111,0,0.1);
+    border-left: 3px solid #ff6f00;
+    border-radius: 8px;
+    color: rgba(255,255,255,0.9);
+    font-size: 0.875rem;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    animation: fadeInUp 0.3s ease-out;
+  }
+
+  .cost-info i {
+    color: #ff6f00;
+    margin-right: 0.5rem;
+  }
+
+  .cost-info strong {
+    color: #ff6f00;
+    font-weight: 700;
+    font-size: 1.1em;
+  }
+
+  /* Estilos para textos small en formulario */
+  .form-group small {
+    display: block;
+    margin-top: 0.5rem;
+    color: rgba(255,255,255,0.7);
+    font-size: 0.8rem;
+    font-style: italic;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   /* Responsive */
   @media (max-width: 640px) {
     .form-wrapper {
