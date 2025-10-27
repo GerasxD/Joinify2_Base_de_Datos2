@@ -46,7 +46,7 @@
                 </div>
                 <div class="group-card-body">
                   <p><strong>Usuarios:</strong> {{ grupo.currentUsers }} / {{ grupo.maxUsers }}</p>
-                  <p><strong>Costo por usuario:</strong> ${{ grupo.costPerUser }}</p>
+                  <p><strong>Costo por usuario:</strong> ${{ grupo.costPerUser | number:'1.2-2' }}</p>
                   <p><strong>Política de pago:</strong> {{ grupo.paymentPolicy }}</p>
                 </div>
                 <div class="group-card-footer">

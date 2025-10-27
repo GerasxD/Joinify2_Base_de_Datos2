@@ -235,24 +235,79 @@ describe('HeaderComponent', () => {
       }, 100);
     });
 
-    it('debería mostrar lista vacía cuando no hay notificaciones', (done) => {
+    it('debería verificar que se recibe notificación con nombre específico cuando usuario se une', (done) => {
       // Arrange
-      localStorage.setItem('userId', '999');
+      const adminId = 521;
+      localStorage.setItem('userId', String(adminId));
+      const mockNotificaciones = [
+        { id_notificacion: 105, mensaje: 'Juan Pérez se unió al grupo.', fecha_envio: '2025-10-26', estado: 'pendiente' }
+      ];
 
       // Act
       component.cargarNotificaciones();
-
+      
       // Assert
       setTimeout(() => {
-        const req = httpMock.expectOne(`${environment.apiUrl}/api/notificaciones/999`);
-        req.flush([]);
+        const req = httpMock.expectOne(`${environment.apiUrl}/api/notificaciones/${adminId}`);
+        expect(req.request.method).toBe('GET');
+        req.flush(mockNotificaciones);
 
         setTimeout(() => {
-          expect(component.notificaciones.length).toBe(0);
+          expect(component.notificaciones.length).toBeGreaterThan(0);
+          expect(component.notificaciones.some(n => n.mensaje.includes('se unió al grupo'))).toBe(true);
           done();
         }, 100);
       }, 100);
     });
 
-  });
-});
+    it('debería verificar que se recibe notificación cuando usuario sale del grupo', (done) => {
+      // Arrange
+      const adminId = 521;
+      localStorage.setItem('userId', String(adminId));
+      const mockNotificaciones = [
+        { id_notificacion: 106, mensaje: 'María González ha salido del grupo.', fecha_envio: '2025-10-26', estado: 'pendiente' }
+      ];
+
+      // Act
+      component.cargarNotificaciones();
+      
+      // Assert
+      setTimeout(() => {
+        const req = httpMock.expectOne(`${environment.apiUrl}/api/notificaciones/${adminId}`);
+        expect(req.request.method).toBe('GET');
+        req.flush(mockNotificaciones);
+
+        setTimeout(() => {
+          expect(component.notificaciones.length).toBeGreaterThan(0);
+          expect(component.notificaciones.some(n => n.mensaje.includes('ha salido del grupo'))).toBe(true);
+          done();
+        }, 100);
+      }, 100);
+    });
+
+    it('debería verificar que se recibe notificación cuando usuario desbloquea contraseña', (done) => {
+      // Arrange
+      const adminId = 521;
+      localStorage.setItem('userId', String(adminId));
+      const mockNotificaciones = [
+        { id_notificacion: 107, mensaje: 'Carlos López desbloqueó la contraseña de Netflix Compartida.', fecha_envio: '2025-10-26', estado: 'pendiente' }
+      ];
+
+      // Act
+      component.cargarNotificaciones();
+      
+      // Assert
+      setTimeout(() => {
+        const req = httpMock.expectOne(`${environment.apiUrl}/api/notificaciones/${adminId}`);
+        expect(req.request.method).toBe('GET');
+        req.flush(mockNotificaciones);
+
+        setTimeout(() => {
+          expect(component.notificaciones.length).toBeGreaterThan(0);
+          expect(component.notificaciones.some(n => n.mensaje.includes('desbloqueó la contraseña'))).toBe(true);
+          done();
+        }, 100);
+      }, 100);
+    });
+
+

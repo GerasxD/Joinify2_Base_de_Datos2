@@ -351,14 +351,18 @@ app.post('/api/grupos/unirse', async (req, res) => {
         );
         console.log('✅ [UNIRSE GRUPO] Usuario agregado al grupo');
 
+        // Obtener datos del grupo e info del usuario que se une
         const [grupo] = await pool.query('SELECT id_creador, num_integrantes, nombre_grupo FROM grupo_suscripcion WHERE id_grupo_suscripcion = ?', [groupId]);
+        const [usuario] = await pool.query('SELECT nombre FROM usuario WHERE id_usuario = ?', [userId]);
+        
         const adminId = grupo[0]?.id_creador;
         const maxUsers = grupo[0]?.num_integrantes;
         const nombreGrupo = grupo[0]?.nombre_grupo;
+        const nombreUsuario = usuario[0]?.nombre || 'Un usuario';
 
-        // Notificar al admin que se unió un nuevo integrante
+        // Notificar al admin que se unió un nuevo integrante (con nombre del usuario)
         if (adminId && adminId !== parseInt(userId)) {
-            const mensajeAdmin = 'Nuevo integrante añadido.';
+            const mensajeAdmin = `${nombreUsuario} se unió al grupo.`;
             const [notifResult] = await pool.query(
                 'INSERT INTO notificacion (id_usuario, mensaje, fecha_envio, estado) VALUES (?, ?, NOW(), ?)', 
                 [adminId, mensajeAdmin, 'pendiente']
@@ -819,9 +823,45 @@ app.get('/api/debug/grupos/:groupId', async (req, res) => {
 app.delete('/api/grupos/salir/:groupId/:userId', async (req, res) => {
     const { groupId, userId } = req.params;
     try {
-        await pool.query('DELETE FROM usuario_grupo WHERE id_usuario = ? AND id_grupo_suscripcion = ?', [userId, groupId]);
+        console.log('🔔 [SALIR GRUPO] Intento de salir:', { groupId, userId });
+
+        // Obtener datos del grupo (admin) y del usuario que se va
+        const [grupo] = await pool.query(
+            'SELECT id_creador, nombre_grupo FROM grupo_suscripcion WHERE id_grupo_suscripcion = ?', 
+            [groupId]
+        );
+        const adminId = grupo[0]?.id_creador;
+
+        const [usuario] = await pool.query(
+            'SELECT nombre FROM usuario WHERE id_usuario = ?', 
+            [userId]
+        );
+        const nombreUsuario = usuario[0]?.nombre || 'Un usuario';
+
+        // Eliminar el usuario del grupo
+        await pool.query(
+            'DELETE FROM usuario_grupo WHERE id_usuario = ? AND id_grupo_suscripcion = ?', 
+            [userId, groupId]
+        );
+        console.log('✅ [SALIR GRUPO] Usuario eliminado del grupo');
+
+        // Notificar solo al admin que un usuario salió
+        if (adminId && adminId !== parseInt(userId)) {
+            const mensajeAdmin = `${nombreUsuario} ha salido del grupo.`;
+            const [notifResult] = await pool.query(
+                'INSERT INTO notificacion (id_usuario, mensaje, fecha_envio, estado) VALUES (?, ?, NOW(), ?)', 
+                [adminId, mensajeAdmin, 'pendiente']
+            );
+            console.log('🔔 [SALIR GRUPO] Notificación enviada al admin:', { 
+                id_notificacion: notifResult.insertId, 
+                adminId, 
+                mensaje: mensajeAdmin 
+            });
+        }
+
         res.status(200).json({ message: 'Has salido del grupo correctamente.' });
     } catch (err) {
+        console.error('❌ [SALIR GRUPO] Error:', err);
         res.status(500).json({ message: 'Error al procesar la solicitud.' });
     }
 });
@@ -913,6 +953,54 @@ app.get('/api/grupos/:groupId/credenciales', async (req, res) => {
   } catch (err) {
     console.error('Error al obtener credenciales:', err);
     res.status(500).json({ message: 'Error al obtener credenciales' });
+  }
+});
+
+// Endpoint para registrar cuando se desbloquea una contraseña
+app.post('/api/grupos/:groupId/desbloquear-contraseña', async (req, res) => {
+  const { groupId } = req.params;
+  const { userId } = req.body;
+
+  if (!groupId || !userId) {
+    return res.status(400).json({ message: 'groupId y userId son obligatorios' });
+  }
+
+  try {
+    console.log('🔔 [DESBLOQUEAR CONTRASEÑA] Usuario desbloqueó contraseña:', { groupId, userId });
+
+    // Obtener datos del usuario que desbloqueó y del admin del grupo
+    const [usuario] = await pool.query(
+      'SELECT nombre FROM usuario WHERE id_usuario = ?',
+      [userId]
+    );
+
+    const [grupo] = await pool.query(
+      'SELECT id_creador, nombre_grupo FROM grupo_suscripcion WHERE id_grupo_suscripcion = ?',
+      [groupId]
+    );
+
+    const nombreUsuario = usuario[0]?.nombre || 'Un usuario';
+    const adminId = grupo[0]?.id_creador;
+    const nombreGrupo = grupo[0]?.nombre_grupo;
+
+    // Enviar notificación al admin (solo si el usuario que desbloqueó no es el admin)
+    if (adminId && adminId !== parseInt(userId)) {
+      const mensajeAdmin = `${nombreUsuario} desbloqueó la contraseña de ${nombreGrupo}.`;
+      const [notifResult] = await pool.query(
+        'INSERT INTO notificacion (id_usuario, mensaje, fecha_envio, estado) VALUES (?, ?, NOW(), ?)',
+        [adminId, mensajeAdmin, 'pendiente']
+      );
+      console.log('🔔 [DESBLOQUEAR CONTRASEÑA] Notificación enviada al admin:', {
+        id_notificacion: notifResult.insertId,
+        adminId,
+        mensaje: mensajeAdmin
+      });
+    }
+
+    res.status(200).json({ message: 'Contraseña desbloqueada y notificación enviada' });
+  } catch (err) {
+    console.error('❌ [DESBLOQUEAR CONTRASEÑA] Error:', err);
+    res.status(500).json({ message: 'Error al desbloquear contraseña' });
   }
 });
 

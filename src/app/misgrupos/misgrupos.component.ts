@@ -42,6 +42,7 @@ export class MisGruposComponent implements OnInit, OnDestroy {
   card: any;
 
   notificacionesInterval: any;  // Variable para almacenar el intervalo
+  gruposInterval: any;           // Variable para almacenar el intervalo de recarga de grupos
   isProcessingPayment = false; // Variable para manejar el estado del pago
 
 
@@ -65,6 +66,11 @@ today: any;
     this.cargarGrupos();
     this.cargarNotificaciones();
     this.initializeStripe();
+    
+    // Recargar grupos cada 30 segundos automáticamente
+    this.gruposInterval = setInterval(() => {
+      this.cargarGrupos();
+    }, 30000);
   }
 
   private cargarGrupos(): void {
@@ -84,7 +90,7 @@ today: any;
             serviceType: grupo.nombre_servicio,
             maxUsers: grupo.num_integrantes,
             currentUsers: grupo.currentUsers || 1,
-            costPerUser: grupo.costo_total && grupo.num_integrantes ? parseFloat((grupo.costo_total / grupo.num_integrantes).toFixed(2)) : 0,
+            costPerUser: grupo.costo_total && grupo.num_integrantes ? Math.round((grupo.costo_total / grupo.num_integrantes) * 100) / 100 : 0,
             paymentPolicy: grupo.fecha_inicio && grupo.fecha_vencimiento
               ? this.calcularPoliticaPago(grupo.fecha_inicio, grupo.fecha_vencimiento)
               : 'monthly',
@@ -184,6 +190,9 @@ today: any;
   ngOnDestroy(): void {
     if (this.notificacionesInterval) {
       clearInterval(this.notificacionesInterval);
+    }
+    if (this.gruposInterval) {
+      clearInterval(this.gruposInterval);
     }
   }
 
@@ -388,7 +397,30 @@ today: any;
   showPassword: { [key: number]: boolean } = {};
 
   togglePassword(groupId: number) {
+    const userId = localStorage.getItem('userId');
+    if (!userId) return;
+
+    // Cambiar la visibilidad localmente
     this.showPassword[groupId] = !this.showPassword[groupId];
+
+    // Si se está mostrando la contraseña, notificar al admin
+    if (this.showPassword[groupId]) {
+      this.notificarDesbloqueoContraseña(groupId, userId);
+    }
+  }
+
+  private notificarDesbloqueoContraseña(groupId: number, userId: string): void {
+    this.http.post<any>(
+      `${environment.apiUrl}/api/grupos/${groupId}/desbloquear-contraseña`,
+      { userId }
+    ).subscribe(
+      (response) => {
+        console.log('✅ Notificación de desbloqueo enviada al admin');
+      },
+      (error) => {
+        console.error('❌ Error al enviar notificación de desbloqueo:', error);
+      }
+    );
   }
 
   // trackBy ya existe
