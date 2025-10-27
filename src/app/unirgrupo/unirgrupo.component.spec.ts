@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-
+import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { RouterTestingModule } from '@angular/router/testing';
 import { UnirGrupoComponent } from './unirgrupo.component';
 
 describe('UnirgrupoComponent', () => {
@@ -8,7 +9,11 @@ describe('UnirgrupoComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [UnirGrupoComponent]
+      imports: [
+        UnirGrupoComponent,
+        HttpClientTestingModule,
+        RouterTestingModule
+      ]
     })
     .compileComponents();
 

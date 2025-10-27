@@ -176,21 +176,6 @@ function decryptText(encryptedData) {
     }
 }
 
-// Mensajes permitidos
-const mensajesPermitidos = [
-  "Recibiste pago.",
-  "Nuevo integrante añadido.",
-  "Grupo lleno.",
-  "Tu pago fue recibido.",
-  "Se ha actualizado el grupo.",
-  "Se elimino el grupo.",
-  "Pago pendiente."
-];
-
-function esMensajePermitido(mensaje) {
-  return mensajesPermitidos.includes(mensaje);
-}
-
 // Endpoints
 
 app.get('/usuarios', async (req, res) => {
@@ -542,7 +527,7 @@ app.get('/api/notificaciones/:userId', async (req, res) => {
             `SELECT id_notificacion, mensaje, fecha_envio, estado 
              FROM notificacion 
              WHERE id_usuario = ? AND estado != 'eliminada'
-             ORDER BY fecha_envio DESC`, 
+             ORDER BY id_notificacion DESC`, 
             [userId]
         );
         
@@ -943,7 +928,12 @@ app.get('/api/grupos/:groupId/credenciales', async (req, res) => {
   }
 })();
 
-// ✅ Iniciar servidor
-app.listen(3001, '0.0.0.0', () => {
-    console.log('Servidor corriendo en http://localhost:3001');
-});
+// ✅ Iniciar servidor (evitar levantar al correr tests)
+if (process.env.NODE_ENV !== 'test') {
+    app.listen(3001, '0.0.0.0', () => {
+        console.log('Servidor corriendo en http://localhost:3001');
+    });
+}
+
+// Exportar para pruebas
+module.exports = { app, pool };
