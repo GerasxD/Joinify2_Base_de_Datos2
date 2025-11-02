@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Joinify</string>
+    <string name="title_activity_main">Joinify</string>
+    <string name="package_name">com.joinify.app</string>
+    <string name="custom_url_scheme">com.joinify.app</string>
+</resources>

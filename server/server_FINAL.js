@@ -67,11 +67,31 @@ try {
 
 const secretKey = 'mi_clave_secreta_12345_ghjlo_hyt';
 
-app.use(cors({
-    origin: 'http://localhost:4200', // URL de tu aplicación Angular
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true
-}));
+// Configuración de CORS mejorada para soportar web y móvil
+const corsOptions = {
+    origin: function (origin, callback) {
+        // Permitir peticiones sin origin (como desde apps móviles)
+        // y desde localhost con cualquier puerto
+        const allowedOrigins = [
+            'http://localhost:4200',  // Angular web
+            'http://localhost',        // Capacitor móvil
+            'capacitor://localhost',   // Capacitor iOS
+            'http://10.0.2.2:3001',    // Android emulator
+            undefined                   // Peticiones sin origin (como desde apps nativas)
+        ];
+        
+        if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin.startsWith('http://localhost')) {
+            callback(null, true);
+        } else {
+            callback(new Error('No permitido por CORS'));
+        }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    credentials: true,
+    optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 

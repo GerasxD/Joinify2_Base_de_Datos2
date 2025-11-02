@@ -474,33 +474,191 @@
     }
 
     /* Header responsive */
+    .header {
+        padding: 0.8rem 0;
+    }
+
     .header-container {
         padding: 0 1rem;
+        position: relative;
+    }
+
+    /* Logo más compacto */
+    .logo {
+        padding: 0.2rem 0.8rem 0.2rem 0.2rem;
+        gap: 0.5rem;
+    }
+
+    .logo img {
+        width: 40px;
+        height: 40px;
+    }
+
+    .logo h1 {
+        font-size: 1.5rem;
+    }
+
+    /* Menú hamburguesa */
+    .menu-toggle {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        width: 35px;
+        height: 30px;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        z-index: 1002;
+        position: relative;
+    }
+
+    .menu-toggle span {
+        width: 100%;
+        height: 3px;
+        background: #fff;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        transform-origin: center;
+    }
+
+    .menu-toggle.active span:nth-child(1) {
+        transform: translateY(9px) rotate(45deg);
+    }
+
+    .menu-toggle.active span:nth-child(2) {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+
+    .menu-toggle.active span:nth-child(3) {
+        transform: translateY(-9px) rotate(-45deg);
+    }
+
+    /* Navegación móvil */
+    nav {
+        position: fixed;
+        top: 0;
+        right: -100%;
+        width: 80%;
+        max-width: 350px;
+        height: 100vh;
+        background: linear-gradient(180deg, #1e1e2f 0%, #2a2a3e 100%);
+        transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 1001;
+        overflow-y: auto;
+        box-shadow: -5px 0 25px rgba(0, 0, 0, 0.3);
+    }
+
+    nav.mobile-active {
+        right: 0;
     }
 
     .nav-links {
-        gap: 1rem;
+        flex-direction: column;
+        gap: 0;
+        padding: 80px 0 20px 0;
+        margin: 0;
+        width: 100%;
     }
 
-    /* Avatar más pequeño en móvil */
-    .avatar-circle {
-        width: 30px;
-        height: 30px;
+    .nav-links li {
+        width: 100%;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    .user-greeting {
-        font-size: 0.85rem;
-        display: none; /* Ocultar texto en móvil muy pequeño */
+    .nav-links a {
+        width: 100%;
+        padding: 1rem 1.5rem;
+        border-radius: 0;
+        justify-content: flex-start;
+        font-size: 1.1rem;
+        box-shadow: none;
+    }
+
+    .nav-links a::after {
+        display: none;
+    }
+
+    .nav-links a:hover,
+    .nav-links a.active {
+        background: rgba(255, 111, 0, 0.15);
+        transform: none;
+    }
+
+    /* Menú de usuario en móvil */
+    .user-menu-container {
+        width: 100%;
     }
 
     .user-name-clickable {
-        padding: 0.3rem 0.8rem;
-        min-height: 40px;
+        width: 100%;
+        padding: 1rem 1.5rem;
+        border-radius: 0;
+        border: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        min-height: auto;
+        justify-content: flex-start;
+    }
+
+    .user-greeting {
+        display: block;
+        font-size: 1rem;
+    }
+
+    .user-dropdown {
+        position: static;
+        width: 100%;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+        background: rgba(0, 0, 0, 0.2);
+        transform: none;
+    }
+
+    .user-dropdown.show {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .user-dropdown::before {
+        display: none;
+    }
+
+    .user-dropdown a {
+        padding: 1rem 2.5rem;
+    }
+
+    /* Botón primario en móvil */
+    .btn-primary {
+        width: 100%;
+        text-align: left;
+        padding: 1rem 1.5rem;
+        border-radius: 0;
+        box-shadow: none;
+        justify-content: flex-start;
+    }
+
+    /* Overlay oscuro */
+    .mobile-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 1000;
+        backdrop-filter: blur(3px);
     }
 }
 
-@media (min-width: 500px) and (max-width: 768px) {
-    .user-greeting {
-        display: block; /* Mostrar texto en pantallas medianas */
+/* Pantallas pequeñas (móviles en horizontal) */
+@media (min-width: 769px) {
+    .menu-toggle {
+        display: none;
+    }
+
+    .mobile-overlay {
+        display: none;
     }
 }
