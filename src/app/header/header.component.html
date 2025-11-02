@@ -8,16 +8,24 @@
       <img src="assets/imagenes/logotipo2.png" alt="Logo Joinify">
       <h1>Joinify</h1>
     </div>
-    <nav>
+    
+    <!-- Botón hamburguesa para móvil -->
+    <button class="menu-toggle" (click)="toggleMobileMenu()" [class.active]="showMobileMenu">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+    
+    <nav [class.mobile-active]="showMobileMenu">
       <ul class="nav-links">
-        <li><a routerLink="/home" routerLinkActive="active"><i class="fas fa-home"></i> Inicio</a></li>
-        <li><a routerLink="/about" routerLinkActive="active"><i class="fas fa-info-circle"></i> Acerca de</a></li>
-        <li><a routerLink="/features" routerLinkActive="active"><i class="fas fa-star"></i> Características</a></li>
-        <li><a routerLink="/contact" routerLinkActive="active"><i class="fas fa-envelope"></i> Contacto</a></li>
+        <li><a routerLink="/home" routerLinkActive="active" (click)="closeMobileMenu()"><i class="fas fa-home"></i> Inicio</a></li>
+        <li><a routerLink="/about" routerLinkActive="active" (click)="closeMobileMenu()"><i class="fas fa-info-circle"></i> Acerca de</a></li>
+        <li><a routerLink="/features" routerLinkActive="active" (click)="closeMobileMenu()"><i class="fas fa-star"></i> Características</a></li>
+        <li><a routerLink="/contact" routerLinkActive="active" (click)="closeMobileMenu()"><i class="fas fa-envelope"></i> Contacto</a></li>
 
         @if (isLoggedIn()) {
-          <li><a routerLink="/crear-grupo" routerLinkActive="active"><i class="fas fa-user-group"></i> Crear Grupo</a></li>
-          <li><a routerLink="/unir-grupo" routerLinkActive="active"><i class="fas fa-user-plus"></i> Unirme a un grupo</a></li>
+          <li><a routerLink="/crear-grupo" routerLinkActive="active" (click)="closeMobileMenu()"><i class="fas fa-user-group"></i> Crear Grupo</a></li>
+          <li><a routerLink="/unir-grupo" routerLinkActive="active" (click)="closeMobileMenu()"><i class="fas fa-user-plus"></i> Unirme a un grupo</a></li>
           <li class="user-menu-container">
             <div class="user-name-clickable" [class.active]="showUserMenu" (click)="toggleUserMenu()">
               <div class="user-avatar">
@@ -27,10 +35,10 @@
               <i class="fas fa-chevron-down dropdown-arrow" [class.rotate]="showUserMenu"></i>
             </div>
             <div class="user-dropdown" [class.show]="showUserMenu">
-              <a routerLink="/mis-grupos" (click)="closeMenus()">
+              <a routerLink="/mis-grupos" (click)="closeMobileMenu()">
                 <i class="fas fa-users"></i> Mis Grupos
               </a>
-              <a routerLink="/configuracion" (click)="closeMenus()">
+              <a routerLink="/configuracion" (click)="closeMobileMenu()">
                 <i class="fas fa-user-cog"></i> Configuración
               </a>
               <a (click)="toggleNotificaciones(); $event.stopPropagation()">
@@ -39,7 +47,7 @@
               <a (click)="togglePagosPopup(); $event.stopPropagation()">
                 <i class="fas fa-credit-card"></i> Historial de Pagos
               </a>
-              <a (click)="logout()">
+              <a (click)="logout(); closeMobileMenu()">
                 <i class="fas fa-sign-out-alt"></i> Cerrar sesión
               </a>
             </div>
@@ -48,13 +56,18 @@
 
         @if (!isLoggedIn()) {
           <li>
-            <a routerLink="/login" class="btn-primary">
+            <a routerLink="/login" class="btn-primary" (click)="closeMobileMenu()">
               <i class="fas fa-sign-in-alt"></i> Login
             </a>
           </li>
         }
       </ul>
     </nav>
+    
+    <!-- Overlay para cerrar menú móvil -->
+    @if (showMobileMenu) {
+      <div class="mobile-overlay" (click)="closeMobileMenu()"></div>
+    }
   </div>
 </header>
 
