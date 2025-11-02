@@ -768,27 +768,230 @@
 
         /* Responsive Design */
         @media (max-width: 768px) {
+            .hero {
+                padding: 4rem 0 3rem 0;
+                min-height: auto;
+            }
+
+            .hero::after {
+                display: none;
+            }
+
             .hero-container {
                 flex-direction: column;
                 gap: 2rem;
-            }
-
-            .hero-graphic {
-                width: 300px;
-                height: 300px;
-            }
-
-            .features-grid,
-            .movies-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .hero-text h2 {
                 text-align: center;
             }
 
             .hero-text {
-                text-align: center;
+                animation: none;
+            }
+
+            .hero-text h2 {
+                font-size: 2rem;
+                line-height: 1.2;
+                margin-bottom: 1rem;
+            }
+
+            .hero-text p {
+                font-size: 1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .hero-visual {
+                display: none; /* Ocultar el círculo visual en móvil para ahorrar espacio */
+            }
+
+            .btn-primary {
+                padding: 0.9rem 2rem;
+                font-size: 1rem;
+                width: 100%;
+                max-width: 300px;
+            }
+
+            /* Features responsive */
+            .features {
+                padding: 4rem 0;
+            }
+
+            .features h3 {
+                font-size: 1.8rem;
+                margin-bottom: 0.8rem;
+            }
+
+            .features-subtitle {
+                font-size: 1rem;
+                padding: 0 1rem;
+            }
+
+            .features-header {
+                margin-bottom: 3rem;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .feature-card {
+                padding: 2rem 1.5rem;
+            }
+
+            .feature-icon {
+                width: 80px;
+                height: 80px;
+            }
+
+            .feature-icon i {
+                font-size: 2rem;
+            }
+
+            .feature-content h4 {
+                font-size: 1.3rem;
+            }
+
+            .feature-content p {
+                font-size: 0.95rem;
+            }
+
+            .feature-stats {
+                flex-direction: row;
+                gap: 1rem;
+            }
+
+            .stat-number {
+                font-size: 1.2rem;
+            }
+
+            /* Movies responsive */
+            .movies {
+                padding: 4rem 0;
+            }
+
+            .movies h3 {
+                font-size: 1.8rem;
+                margin-bottom: 2rem;
+            }
+
+            .movies-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .movie-poster-wrapper {
+                height: 450px;
+            }
+
+            /* CTA responsive */
+            .cta {
+                padding: 4rem 0;
+            }
+
+            .cta h3 {
+                font-size: 1.8rem;
+                margin-bottom: 1rem;
+            }
+
+            .cta p {
+                font-size: 1rem;
+                margin-bottom: 1.5rem;
+                padding: 0 1rem;
+            }
+
+            /* Ajustar container */
+            .container {
+                width: 95%;
+            }
+        }
+
+        /* Móviles muy pequeños */
+        @media (max-width: 480px) {
+            .hero {
+                padding: 3rem 0 2rem 0;
+            }
+
+            .hero-text h2 {
+                font-size: 1.6rem;
+            }
+
+            .hero-text p {
+                font-size: 0.9rem;
+            }
+
+            .features h3,
+            .movies h3,
+            .cta h3 {
+                font-size: 1.5rem;
+            }
+
+            .feature-card {
+                padding: 1.5rem 1rem;
+            }
+
+            .movie-poster-wrapper {
+                height: 400px;
+            }
+
+            .movie-info {
+                padding: 1rem;
+            }
+
+            .movie-info h4 {
+                font-size: 1.1rem;
+            }
+
+            .movie-overview {
+                font-size: 0.85rem;
+            }
+
+            /* Stats más compactos */
+            .feature-stats {
+                flex-direction: column;
+                gap: 0.8rem;
+                padding-top: 1rem;
+            }
+
+            .stat {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                width: 100%;
+                padding: 0.5rem 0;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            }
+
+            .stat:last-child {
+                border-bottom: none;
+            }
+
+            .stat-number {
+                font-size: 1.1rem;
+            }
+
+            .stat-label {
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Tablets en orientación vertical */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .hero-container {
+                gap: 3rem;
+            }
+
+            .hero-graphic {
+                width: 350px;
+                height: 350px;
+            }
+
+            .features-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 2rem;
+            }
+
+            .movies-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1.5rem;
             }
         }
 
