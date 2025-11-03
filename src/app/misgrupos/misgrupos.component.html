@@ -49,6 +49,12 @@
               Activar Grupo
             </button>
           </ng-template>
+
+          <!-- NUEVO: Botón para rotar contraseña (solo creador) -->
+          <button class="btn btn-info" (click)="rotarContrasena(grupo.id)">
+            Rotar Contraseña
+          </button>
+
           <button class="btn btn-danger" (click)="darDeBajaGrupo(grupo.id)">
             Eliminar Grupo
           </button>
