@@ -23,6 +23,7 @@ export class HeaderComponent implements OnInit {
   showPagosPopup = false;
   historialPagos: any[] = [];
   datePipe = new DatePipe('es-MX');
+  showMobileMenu = false;
 
   constructor(
     private router: Router, 
@@ -99,6 +100,22 @@ export class HeaderComponent implements OnInit {
   closeMenus() {
     this.showUserMenu = false;
     this.showNotificaciones = false;
+  }
+
+  toggleMobileMenu() {
+    this.showMobileMenu = !this.showMobileMenu;
+    // Prevenir scroll del body cuando el menú está abierto
+    if (this.showMobileMenu) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+  }
+
+  closeMobileMenu() {
+    this.showMobileMenu = false;
+    document.body.style.overflow = '';
+    this.closeMenus();
   }
 
   // Formatea la fecha a dd/MM/yyyy

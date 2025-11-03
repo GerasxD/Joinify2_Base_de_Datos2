@@ -41,7 +41,7 @@ const pool = mysql.createPool({
     host: 'localhost',
     user: 'root',
     password: 'Maicgio323-2',
-    database: 'joinify_DB',
+    database: 'joinify_2l',
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
@@ -67,11 +67,31 @@ try {
 
 const secretKey = 'mi_clave_secreta_12345_ghjlo_hyt';
 
-app.use(cors({
-    origin: 'http://localhost:4200', // URL de tu aplicación Angular
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true
-}));
+// Configuración de CORS mejorada para soportar web y móvil
+const corsOptions = {
+    origin: function (origin, callback) {
+        // Permitir peticiones sin origin (como desde apps móviles)
+        // y desde localhost con cualquier puerto
+        const allowedOrigins = [
+            'http://localhost:4200',  // Angular web
+            'http://localhost',        // Capacitor móvil
+            'capacitor://localhost',   // Capacitor iOS
+            'http://10.0.2.2:3001',    // Android emulator
+            undefined                   // Peticiones sin origin (como desde apps nativas)
+        ];
+        
+        if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin.startsWith('http://localhost')) {
+            callback(null, true);
+        } else {
+            callback(new Error('No permitido por CORS'));
+        }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    credentials: true,
+    optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
@@ -111,69 +131,97 @@ function decryptText(encryptedData) {
     // Validar entrada
     if (!encryptedData || typeof encryptedData !== 'string' || encryptedData.trim() === '') {
         console.warn('decryptText: datos inválidos o vacíos:', {
-            type: typeof encryptedData, 
+            type: typeof encryptedData,
             value: encryptedData,
             length: encryptedData ? encryptedData.length : 0
         });
         return 'No disponible';
     }
-    
-    // Si la contraseña parece ser texto plano (sin formato de encriptación)
-    if (!encryptedData.includes(':')) {
-        console.log('decryptText: datos sin formato de encriptación, devolviendo como texto plano:', encryptedData);
-        return encryptedData; // Asumir que ya está desencriptado
-    }
-    
-    try {
-        const algorithm = 'aes-256-cbc';
-        const key = crypto.scryptSync(secretKey, 'salt', 32);
-        
-        const parts = encryptedData.split(':');
-        console.log('decryptText: procesando partes:', parts.length, parts);
-        
-        // Manejar diferentes formatos de encriptación
-        let iv, encryptedText;
-        
+
+    const algorithm = 'aes-256-cbc';
+    const key = crypto.scryptSync(secretKey, 'salt', 32);
+
+    // Helper para intentar desencriptar con iv buffer y ciphertext (hex o Buffer)
+    const tryDecrypt = (ivBuffer, encryptedHexOrBuffer) => {
+        try {
+            const decipher = crypto.createDecipheriv(algorithm, key, ivBuffer);
+            // encryptedHexOrBuffer puede ser hex string o Buffer
+            let decrypted;
+            if (Buffer.isBuffer(encryptedHexOrBuffer)) {
+                decrypted = Buffer.concat([decipher.update(encryptedHexOrBuffer), decipher.final()]).toString('utf8');
+            } else {
+                decrypted = decipher.update(encryptedHexOrBuffer, 'hex', 'utf8');
+                decrypted += decipher.final('utf8');
+            }
+            return decrypted;
+        } catch (err) {
+            // no lanzar, devolver null para siguiente intento
+            return null;
+        }
+    };
+
+    // Si contiene ':' intentar parsearlo en partes
+    if (encryptedData.includes(':')) {
+        const parts = encryptedData.split(':').map(p => p.trim()).filter(Boolean);
+
+        // Caso común: ivHex:encryptedHex (2 partes)
         if (parts.length === 2) {
-            // Formato nuevo: iv:encrypted
-            iv = Buffer.from(parts[0], 'hex');
-            encryptedText = parts[1];
-        } else if (parts.length === 3) {
-            // Formato legacy que parece estar en tu BD: random:iv:encrypted
-            iv = Buffer.from(parts[1], 'hex');
-            encryptedText = parts[2];
-        } else {
-            console.warn('decryptText: formato inválido, número de partes:', parts.length);
-            return 'Formato de encriptación inválido';
+            const [ivPart, encryptedPart] = parts;
+            // Intento A: iv en hex (32 chars -> 16 bytes)
+            if (/^[0-9a-fA-F]+$/.test(ivPart) && ivPart.length === 32) {
+                const iv = Buffer.from(ivPart, 'hex');
+                const res = tryDecrypt(iv, encryptedPart);
+                if (res !== null) return res;
+            }
+            // Intento B: iv en base64 (longitud típica 24 para 16 bytes)
+            try {
+                const ivBase = Buffer.from(ivPart, 'base64');
+                if (ivBase.length === 16) {
+                    const res2 = tryDecrypt(ivBase, encryptedPart);
+                    if (res2 !== null) return res2;
+                }
+            } catch (e) { /* ignore */ }
         }
-        
-        // Validar que tenemos datos válidos
-        if (!encryptedText || encryptedText.trim() === '') {
-            console.warn('decryptText: texto encriptado vacío después del parsing');
-            return 'No disponible';
+
+        // Caso legacy: random:iv:encrypted (3 partes) -> iv en hex esperado en parts[1]
+        if (parts.length === 3) {
+            const ivPart = parts[1];
+            const encryptedPart = parts[2];
+            if (/^[0-9a-fA-F]+$/.test(ivPart) && ivPart.length === 32) {
+                const iv = Buffer.from(ivPart, 'hex');
+                const res = tryDecrypt(iv, encryptedPart);
+                if (res !== null) return res;
+            }
+            // probar iv en base64 también
+            try {
+                const ivBase = Buffer.from(ivPart, 'base64');
+                if (ivBase.length === 16) {
+                    const res2 = tryDecrypt(ivBase, encryptedPart);
+                    if (res2 !== null) return res2;
+                }
+            } catch (e) { /* ignore */ }
         }
-        
-        if (!iv || iv.length !== 16) {
-            console.warn('decryptText: IV inválido, longitud:', iv ? iv.length : 0);
-            return 'Vector de inicialización inválido';
-        }
-        
-        console.log('decryptText: intentando desencriptar con IV longitud:', iv.length, 'texto longitud:', encryptedText.length);
-        
-        const decipher = crypto.createDecipheriv(algorithm, key, iv);
-        let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
-        decrypted += decipher.final('utf8');
-        
-        console.log('decryptText: desencriptación exitosa, resultado longitud:', decrypted.length);
-        return decrypted;
-    } catch (error) {
-        console.error('Error al desencriptar:', {
-            message: error.message,
-            stack: error.stack,
-            input: encryptedData
-        });
-        return 'Error de desencriptación';
+
+        // Si llegó aquí, formato con ':' pero no pudo desencriptar
+        console.warn('decryptText: formato con ":" no reconocido o desencriptación fallida. partsLengths=', parts.map(p => p.length));
+        return 'Vector de inicialización inválido';
     }
+
+    // Fallback: intentar decodificar todo como base64 blob iv(16) + cipher bytes
+    try {
+        const blob = Buffer.from(encryptedData, 'base64');
+        if (blob.length > 16) {
+            const iv = blob.slice(0, 16);
+            const cipherBytes = blob.slice(16);
+            const res = tryDecrypt(iv, cipherBytes);
+            if (res !== null) return res;
+        }
+    } catch (e) {
+        // no hacer nada, seguiremos con mensaje de error
+    }
+
+    console.warn('decryptText: no se pudo identificar formato de encriptación para:', { length: encryptedData.length });
+    return 'Vector de inicialización inválido';
 }
 
 // Endpoints
@@ -953,54 +1001,6 @@ app.get('/api/grupos/:groupId/credenciales', async (req, res) => {
   } catch (err) {
     console.error('Error al obtener credenciales:', err);
     res.status(500).json({ message: 'Error al obtener credenciales' });
-  }
-});
-
-// Endpoint para registrar cuando se desbloquea una contraseña
-app.post('/api/grupos/:groupId/desbloquear-contraseña', async (req, res) => {
-  const { groupId } = req.params;
-  const { userId } = req.body;
-
-  if (!groupId || !userId) {
-    return res.status(400).json({ message: 'groupId y userId son obligatorios' });
-  }
-
-  try {
-    console.log('🔔 [DESBLOQUEAR CONTRASEÑA] Usuario desbloqueó contraseña:', { groupId, userId });
-
-    // Obtener datos del usuario que desbloqueó y del admin del grupo
-    const [usuario] = await pool.query(
-      'SELECT nombre FROM usuario WHERE id_usuario = ?',
-      [userId]
-    );
-
-    const [grupo] = await pool.query(
-      'SELECT id_creador, nombre_grupo FROM grupo_suscripcion WHERE id_grupo_suscripcion = ?',
-      [groupId]
-    );
-
-    const nombreUsuario = usuario[0]?.nombre || 'Un usuario';
-    const adminId = grupo[0]?.id_creador;
-    const nombreGrupo = grupo[0]?.nombre_grupo;
-
-    // Enviar notificación al admin (solo si el usuario que desbloqueó no es el admin)
-    if (adminId && adminId !== parseInt(userId)) {
-      const mensajeAdmin = `${nombreUsuario} desbloqueó la contraseña de ${nombreGrupo}.`;
-      const [notifResult] = await pool.query(
-        'INSERT INTO notificacion (id_usuario, mensaje, fecha_envio, estado) VALUES (?, ?, NOW(), ?)',
-        [adminId, mensajeAdmin, 'pendiente']
-      );
-      console.log('🔔 [DESBLOQUEAR CONTRASEÑA] Notificación enviada al admin:', {
-        id_notificacion: notifResult.insertId,
-        adminId,
-        mensaje: mensajeAdmin
-      });
-    }
-
-    res.status(200).json({ message: 'Contraseña desbloqueada y notificación enviada' });
-  } catch (err) {
-    console.error('❌ [DESBLOQUEAR CONTRASEÑA] Error:', err);
-    res.status(500).json({ message: 'Error al desbloquear contraseña' });
   }
 });
 

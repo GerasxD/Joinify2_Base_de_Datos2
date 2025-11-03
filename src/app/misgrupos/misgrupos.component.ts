@@ -431,5 +431,42 @@ today: any;
       : parseFloat(String(grupo.costPerUser || '0')) || 0;
     this.simularPago(grupo.id, monto);
   }
+
+  // Llamada para rotar la contraseña (solo visible/usable por Admin)
+  rotarContrasena(grupoId: number): void {
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+      this.sweetAlert.error('No autorizado', 'Debes iniciar sesión como creador para rotar la contraseña.');
+      return;
+    }
+
+    this.sweetAlert.confirm(
+      'Rotar contraseña',
+      'Al rotar la contraseña, todos los miembros dejarán de poder usar la contraseña anterior. ¿Continuar?'
+    ).then(result => {
+      if (!result || !result.isConfirmed) return;
+
+      this.http.post<any>(`${environment.apiUrl}/api/grupos/rotar/${grupoId}`, { userId })
+        .subscribe({
+          next: res => {
+            const nueva = res?.nuevaPassword;
+            if (nueva) {
+              // Mostrar la nueva contraseña SOLO al creador (respuesta del servidor)
+              this.sweetAlert.success('Contraseña rotada', `Nueva contraseña: ${nueva}`);
+            } else {
+              this.sweetAlert.success('Contraseña rotada', 'La contraseña se actualizó correctamente.');
+            }
+            // Refrescar la lista de grupos para reflejar cambios
+            this.cargarGrupos();
+          },
+          error: err => {
+            console.error('Error rotando contraseña:', err);
+            const msg = err?.error?.message || 'No se pudo rotar la contraseña';
+            this.sweetAlert.error('Error', msg);
+          }
+        });
+    });
+  }
+
 }
 
