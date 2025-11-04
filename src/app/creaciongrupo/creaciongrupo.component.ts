@@ -25,6 +25,7 @@ export class CreaciongrupoComponent implements OnInit {
     serviceType: string;
     maxUsers: number | null;
     costPerUser: number;
+    totalCost: number;
     paymentPolicy: 'monthly' | 'annual';
     accountEmail: string;
     accountPassword: string;
@@ -33,10 +34,13 @@ export class CreaciongrupoComponent implements OnInit {
     serviceType: '',
     maxUsers: null,
     costPerUser: 0,
+    totalCost: 0,
     paymentPolicy: 'monthly',
     accountEmail: '',
     accountPassword: ''
   };
+
+  costPerUser: number = 0; // Para mostrar en el template
 
   serviceList: Servicio[] = [];
 
@@ -75,11 +79,27 @@ export class CreaciongrupoComponent implements OnInit {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
 
+  // Calcular costo por usuario cuando cambie el costo total o número de usuarios
+  calculateCostPerUser() {
+    if (this.groupData.maxUsers && this.groupData.maxUsers > 0 && this.groupData.totalCost > 0) {
+      // Calcular y redondear a 2 decimales
+      const calculated = this.groupData.totalCost / this.groupData.maxUsers;
+      this.costPerUser = Math.round(calculated * 100) / 100;
+      this.groupData.costPerUser = this.costPerUser;
+    } else {
+      this.costPerUser = 0;
+      this.groupData.costPerUser = 0;
+    }
+  }
+
   onSubmit() {
-    if (!this.groupData.name || !this.groupData.serviceType || !this.groupData.maxUsers || !this.groupData.costPerUser) {
+    if (!this.groupData.name || !this.groupData.serviceType || !this.groupData.maxUsers || !this.groupData.totalCost) {
       this.sweetAlert.warning('Campos incompletos', 'Por favor, completa todos los campos obligatorios.');
       return;
     }
+    
+    // Calcular el costo por usuario final antes de enviar
+    this.calculateCostPerUser();
     if (!this.isValidEmail(this.groupData.accountEmail)) {
       this.sweetAlert.error('Email inválido', 'Ingresa un correo válido para la cuenta del servicio.');
       return;

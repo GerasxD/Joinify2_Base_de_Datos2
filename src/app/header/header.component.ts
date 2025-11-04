@@ -22,7 +22,7 @@ export class HeaderComponent implements OnInit {
   notificaciones: any[] = [];
   showPagosPopup = false;
   historialPagos: any[] = [];
-  datePipe = new DatePipe('es');
+  datePipe = new DatePipe('es-MX');
   showMobileMenu = false;
 
   constructor(

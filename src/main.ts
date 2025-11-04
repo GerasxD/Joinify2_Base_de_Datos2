@@ -7,7 +7,10 @@ import { App } from '@capacitor/app';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { Capacitor } from '@capacitor/core';
+import localeEs from '@angular/common/locales/es';
 
+// Registrar ambos locales: es y es-MX
+registerLocaleData(localeEs, 'es');
 registerLocaleData(localeEsMX, 'es-MX');
 
 // Inicializar plugins de Capacitor si estamos en plataforma nativa
