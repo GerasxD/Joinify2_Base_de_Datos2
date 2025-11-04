@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { MisGruposComponent } from './misgrupos.component'; // Corrected class name
-
+import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { RouterTestingModule } from '@angular/router/testing';
+import { MisGruposComponent } from './misgrupos.component';
 
 describe('MisgruposComponent', () => {
   let component: MisGruposComponent;
@@ -8,7 +9,11 @@ describe('MisgruposComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [MisGruposComponent]
+      imports: [
+        MisGruposComponent,
+        HttpClientTestingModule,
+        RouterTestingModule
+      ]
     })
     .compileComponents();
 
