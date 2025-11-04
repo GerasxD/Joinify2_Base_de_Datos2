@@ -3,17 +3,23 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { Usuario, UsuarioActualizar, CambiarPassword, UsuarioBaseDatos, DatosAdicionales } from '../models/usuario.model';
+import { EnvironmentService } from './environment.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class UsuarioService {
-  private apiUrl = 'http://localhost:3001';
+  private apiUrl: string;
   private usuarioActualSubject = new BehaviorSubject<Usuario | null>(null);
   public usuarioActual$ = this.usuarioActualSubject.asObservable();
   private readonly PERFIL_STORAGE_KEY = 'perfil_extendido_';
 
-  constructor(private http: HttpClient) {
+  constructor(
+    private http: HttpClient,
+    private environmentService: EnvironmentService
+  ) {
+    this.apiUrl = this.environmentService.getApiUrl();
+    console.log('🔗 UsuarioService inicializado con API URL:', this.apiUrl);
     this.cargarUsuarioDesdeStorage();
   }
 
@@ -37,21 +43,33 @@ export class UsuarioService {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       });
 
+      console.log('🌐 Obteniendo perfil desde:', `${this.apiUrl}/api/usuarios/${idUsuario}/perfil`);
+      
       // Obtener datos básicos de la BD
       this.http.get<UsuarioBaseDatos>(`${this.apiUrl}/api/usuarios/${idUsuario}/perfil`, { headers }).subscribe({
         next: (datosBasicos) => {
+          console.log('✅ Datos básicos obtenidos de la BD:', datosBasicos);
           // Combinar con datos locales
           const datosLocales = this.obtenerDatosLocales(idUsuario);
+          console.log('📦 Datos locales:', datosLocales);
           const perfilCompleto: Usuario = {
             ...datosBasicos,
             ...datosLocales
           };
+          console.log('✨ Perfil completo combinado:', perfilCompleto);
           observer.next(perfilCompleto);
           observer.complete();
         },
         error: (error) => {
-          console.error('Error al obtener perfil:', error);
-          observer.error(error);
+          console.error('❌ Error al obtener perfil:', error);
+          console.error('Error status:', error.status);
+          console.error('Error message:', error.message);
+          console.error('Error completo:', JSON.stringify(error, null, 2));
+          observer.error({
+            message: error.error?.message || error.message || 'Error al conectar con el servidor',
+            status: error.status,
+            error: error
+          });
         }
       });
     });

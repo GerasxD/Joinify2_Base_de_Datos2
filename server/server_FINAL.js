@@ -41,7 +41,7 @@ const pool = mysql.createPool({
     host: 'localhost',
     user: 'root',
     password: 'Maicgio323-2',
-    database: 'joinify_db',
+    database: 'joinify_db2',
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
@@ -131,97 +131,69 @@ function decryptText(encryptedData) {
     // Validar entrada
     if (!encryptedData || typeof encryptedData !== 'string' || encryptedData.trim() === '') {
         console.warn('decryptText: datos inválidos o vacíos:', {
-            type: typeof encryptedData,
+            type: typeof encryptedData, 
             value: encryptedData,
             length: encryptedData ? encryptedData.length : 0
         });
         return 'No disponible';
     }
-
-    const algorithm = 'aes-256-cbc';
-    const key = crypto.scryptSync(secretKey, 'salt', 32);
-
-    // Helper para intentar desencriptar con iv buffer y ciphertext (hex o Buffer)
-    const tryDecrypt = (ivBuffer, encryptedHexOrBuffer) => {
-        try {
-            const decipher = crypto.createDecipheriv(algorithm, key, ivBuffer);
-            // encryptedHexOrBuffer puede ser hex string o Buffer
-            let decrypted;
-            if (Buffer.isBuffer(encryptedHexOrBuffer)) {
-                decrypted = Buffer.concat([decipher.update(encryptedHexOrBuffer), decipher.final()]).toString('utf8');
-            } else {
-                decrypted = decipher.update(encryptedHexOrBuffer, 'hex', 'utf8');
-                decrypted += decipher.final('utf8');
-            }
-            return decrypted;
-        } catch (err) {
-            // no lanzar, devolver null para siguiente intento
-            return null;
-        }
-    };
-
-    // Si contiene ':' intentar parsearlo en partes
-    if (encryptedData.includes(':')) {
-        const parts = encryptedData.split(':').map(p => p.trim()).filter(Boolean);
-
-        // Caso común: ivHex:encryptedHex (2 partes)
-        if (parts.length === 2) {
-            const [ivPart, encryptedPart] = parts;
-            // Intento A: iv en hex (32 chars -> 16 bytes)
-            if (/^[0-9a-fA-F]+$/.test(ivPart) && ivPart.length === 32) {
-                const iv = Buffer.from(ivPart, 'hex');
-                const res = tryDecrypt(iv, encryptedPart);
-                if (res !== null) return res;
-            }
-            // Intento B: iv en base64 (longitud típica 24 para 16 bytes)
-            try {
-                const ivBase = Buffer.from(ivPart, 'base64');
-                if (ivBase.length === 16) {
-                    const res2 = tryDecrypt(ivBase, encryptedPart);
-                    if (res2 !== null) return res2;
-                }
-            } catch (e) { /* ignore */ }
-        }
-
-        // Caso legacy: random:iv:encrypted (3 partes) -> iv en hex esperado en parts[1]
-        if (parts.length === 3) {
-            const ivPart = parts[1];
-            const encryptedPart = parts[2];
-            if (/^[0-9a-fA-F]+$/.test(ivPart) && ivPart.length === 32) {
-                const iv = Buffer.from(ivPart, 'hex');
-                const res = tryDecrypt(iv, encryptedPart);
-                if (res !== null) return res;
-            }
-            // probar iv en base64 también
-            try {
-                const ivBase = Buffer.from(ivPart, 'base64');
-                if (ivBase.length === 16) {
-                    const res2 = tryDecrypt(ivBase, encryptedPart);
-                    if (res2 !== null) return res2;
-                }
-            } catch (e) { /* ignore */ }
-        }
-
-        // Si llegó aquí, formato con ':' pero no pudo desencriptar
-        console.warn('decryptText: formato con ":" no reconocido o desencriptación fallida. partsLengths=', parts.map(p => p.length));
-        return 'Vector de inicialización inválido';
+    
+    // Si la contraseña parece ser texto plano (sin formato de encriptación)
+    if (!encryptedData.includes(':')) {
+        console.log('decryptText: datos sin formato de encriptación, devolviendo como texto plano:', encryptedData);
+        return encryptedData; // Asumir que ya está desencriptado
     }
-
-    // Fallback: intentar decodificar todo como base64 blob iv(16) + cipher bytes
+    
     try {
-        const blob = Buffer.from(encryptedData, 'base64');
-        if (blob.length > 16) {
-            const iv = blob.slice(0, 16);
-            const cipherBytes = blob.slice(16);
-            const res = tryDecrypt(iv, cipherBytes);
-            if (res !== null) return res;
+        const algorithm = 'aes-256-cbc';
+        const key = crypto.scryptSync(secretKey, 'salt', 32);
+        
+        const parts = encryptedData.split(':');
+        console.log('decryptText: procesando partes:', parts.length, parts);
+        
+        // Manejar diferentes formatos de encriptación
+        let iv, encryptedText;
+        
+        if (parts.length === 2) {
+            // Formato nuevo: iv:encrypted
+            iv = Buffer.from(parts[0], 'hex');
+            encryptedText = parts[1];
+        } else if (parts.length === 3) {
+            // Formato legacy que parece estar en tu BD: random:iv:encrypted
+            iv = Buffer.from(parts[1], 'hex');
+            encryptedText = parts[2];
+        } else {
+            console.warn('decryptText: formato inválido, número de partes:', parts.length);
+            return 'Formato de encriptación inválido';
         }
-    } catch (e) {
-        // no hacer nada, seguiremos con mensaje de error
+        
+        // Validar que tenemos datos válidos
+        if (!encryptedText || encryptedText.trim() === '') {
+            console.warn('decryptText: texto encriptado vacío después del parsing');
+            return 'No disponible';
+        }
+        
+        if (!iv || iv.length !== 16) {
+            console.warn('decryptText: IV inválido, longitud:', iv ? iv.length : 0);
+            return 'Vector de inicialización inválido';
+        }
+        
+        console.log('decryptText: intentando desencriptar con IV longitud:', iv.length, 'texto longitud:', encryptedText.length);
+        
+        const decipher = crypto.createDecipheriv(algorithm, key, iv);
+        let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+        
+        console.log('decryptText: desencriptación exitosa, resultado longitud:', decrypted.length);
+        return decrypted;
+    } catch (error) {
+        console.error('Error al desencriptar:', {
+            message: error.message,
+            stack: error.stack,
+            input: encryptedData
+        });
+        return 'Error de desencriptación';
     }
-
-    console.warn('decryptText: no se pudo identificar formato de encriptación para:', { length: encryptedData.length });
-    return 'Vector de inicialización inválido';
 }
 
 // Endpoints
@@ -299,6 +271,22 @@ app.post('/api/grupos/crear', async (req, res) => {
     }
 
     try {
+        // VALIDAR QUE EL USUARIO EXISTE
+        console.log('🔍 Verificando que el usuario existe con ID:', userId);
+        const [usuarioExiste] = await pool.query(
+            'SELECT id_usuario, nombre FROM usuario WHERE id_usuario = ?',
+            [userId]
+        );
+
+        if (!usuarioExiste || usuarioExiste.length === 0) {
+            console.log('❌ Usuario no encontrado:', userId);
+            return res.status(404).json({ 
+                message: 'Usuario no encontrado. Por favor, inicia sesión nuevamente.' 
+            });
+        }
+
+        console.log('✅ Usuario existe:', usuarioExiste[0].nombre);
+
         const [servicio] = await pool.query(
             'SELECT id_servicio, nombre_servicio FROM servicio_streaming WHERE nombre_servicio = ?',
             [serviceType]
@@ -390,6 +378,20 @@ app.post('/api/grupos/unirse', async (req, res) => {
     if (!groupId || !userId) return res.status(400).json({ message: 'Datos faltantes' });
 
     try {
+        // Verificar si el grupo está activo
+        const [grupoInfo] = await pool.query('SELECT id_creador, num_integrantes, estado_grupo FROM grupo_suscripcion WHERE id_grupo_suscripcion = ?', [groupId]);
+        
+        if (!grupoInfo || grupoInfo.length === 0) {
+            return res.status(404).json({ message: 'Grupo no encontrado' });
+        }
+        
+        if (grupoInfo[0].estado_grupo !== 'Activo') {
+            return res.status(403).json({ 
+                message: 'Este grupo está inactivo y no acepta nuevos miembros. Contacta al administrador del grupo.',
+                estiloError: 'grupo-inactivo'
+            });
+        }
+
         const [existe] = await pool.query('SELECT * FROM usuario_grupo WHERE id_usuario = ? AND id_grupo_suscripcion = ?', [userId, groupId]);
         if (existe.length > 0) return res.status(400).json({ message: 'Ya eres miembro de este grupo' });
 
@@ -399,27 +401,12 @@ app.post('/api/grupos/unirse', async (req, res) => {
         );
         console.log('✅ [UNIRSE GRUPO] Usuario agregado al grupo');
 
-        // Obtener datos del grupo e info del usuario que se une
-        const [grupo] = await pool.query('SELECT id_creador, num_integrantes, nombre_grupo FROM grupo_suscripcion WHERE id_grupo_suscripcion = ?', [groupId]);
-        const [usuario] = await pool.query('SELECT nombre FROM usuario WHERE id_usuario = ?', [userId]);
-        
+        const [grupo] = await pool.query('SELECT id_creador, num_integrantes FROM grupo_suscripcion WHERE id_grupo_suscripcion = ?', [groupId]);
         const adminId = grupo[0]?.id_creador;
         const maxUsers = grupo[0]?.num_integrantes;
-        const nombreGrupo = grupo[0]?.nombre_grupo;
-        const nombreUsuario = usuario[0]?.nombre || 'Un usuario';
 
-        // Notificar al admin que se unió un nuevo integrante (con nombre del usuario)
-        if (adminId && adminId !== parseInt(userId)) {
-            const mensajeAdmin = `${nombreUsuario} se unió al grupo.`;
-            const [notifResult] = await pool.query(
-                'INSERT INTO notificacion (id_usuario, mensaje, fecha_envio, estado) VALUES (?, ?, NOW(), ?)', 
-                [adminId, mensajeAdmin, 'pendiente']
-            );
-            console.log('🔔 [UNIRSE GRUPO] Notificación enviada al admin:', { 
-                id_notificacion: notifResult.insertId, 
-                adminId, 
-                mensaje: mensajeAdmin 
-            });
+        if (adminId && adminId !== userId) {
+            await pool.query('INSERT INTO notificacion (id_usuario, mensaje, fecha_envio, estado) VALUES (?, ?, CURDATE(), ?)', [adminId, 'Nuevo integrante añadido.', 'pendiente']);
         }
 
         // Verificar si el grupo está lleno
@@ -442,7 +429,6 @@ app.post('/api/grupos/unirse', async (req, res) => {
 
         res.status(200).json({ message: 'Te has unido al grupo correctamente' });
     } catch (err) {
-        console.error('❌ [UNIRSE GRUPO] Error:', err);
         res.status(500).json({ message: 'Error al unirse al grupo' });
     }
 });
@@ -452,7 +438,7 @@ app.get('/gruposdisponibles/:id_usuario', async (req, res) => {
     if (!id_usuario) return res.status(400).json({ error: 'ID de usuario no proporcionado' });
     try {
         const [grupos] = await pool.query(`
-            SELECT gs.*, ss.nombre_servicio,
+            SELECT gs.*, ss.nombre_servicio, gs.estado_grupo,
             (SELECT COUNT(*) FROM usuario_grupo ug WHERE ug.id_grupo_suscripcion = gs.id_grupo_suscripcion) AS currentUsers
             FROM grupo_suscripcion gs
             JOIN servicio_streaming ss ON gs.id_servicio = ss.id_servicio

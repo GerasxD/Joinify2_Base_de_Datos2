@@ -101,16 +101,183 @@
 
 /* Responsive Adjustments */
 @media (max-width: 768px) {
+    /* Hero Section Mobile */
+    .about-hero {
+        padding: 3rem 0;
+        padding-top: calc(3rem + env(safe-area-inset-top));
+    }
+
     .about-hero h2 {
-        font-size: 2rem;
+        font-size: clamp(1.5rem, 5vw, 2rem);
+        line-height: 1.3;
+        margin-bottom: 1rem;
+    }
+
+    .hero-text p {
+        font-size: clamp(0.9rem, 3vw, 1rem);
+        margin-bottom: 1.5rem;
+    }
+
+    /* About Cards Mobile */
+    .about-content {
+        padding: 2.5rem 0;
     }
 
     .about-grid {
         grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .about-card {
+        padding: 1.5rem;
+        margin: 0 0.5rem;
+    }
+
+    .about-card h3 {
+        font-size: clamp(1.1rem, 4vw, 1.3rem);
+    }
+
+    .about-card p {
+        font-size: clamp(0.9rem, 3vw, 1rem);
+        line-height: 1.6;
+    }
+
+    .about-card-icon {
+        width: 56px;
+        height: 56px;
+        margin-bottom: 1rem;
+    }
+
+    .about-card-icon svg {
+        width: 28px;
+        height: 28px;
+    }
+
+    /* Team Section Mobile */
+    .team-section {
+        padding: 3rem 0;
+        padding-bottom: calc(3rem + env(safe-area-inset-bottom));
+    }
+
+    .section-title {
+        font-size: clamp(1.5rem, 5vw, 2rem);
+        margin-bottom: 0.75rem;
+    }
+
+    .section-description {
+        font-size: clamp(0.9rem, 3vw, 1rem);
+        margin-bottom: 2rem;
+        padding: 0 1rem;
     }
 
     .team-grid {
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        padding: 0 1rem;
+    }
+
+    .team-member {
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
+    .member-image-container {
+        height: 280px;
+    }
+
+    .team-member img {
+        width: 180px;
+        height: 180px;
+    }
+
+    .member-info {
+        padding: 1.25rem;
+    }
+
+    .member-info h3 {
+        font-size: clamp(1.1rem, 4vw, 1.2rem);
+    }
+
+    .member-role {
+        font-size: clamp(0.9rem, 3vw, 1rem);
+        margin-bottom: 0.5rem;
+    }
+
+    .member-description {
+        font-size: clamp(0.85rem, 2.5vw, 0.9rem);
+    }
+
+    /* Touch Target Optimization */
+    .member-social a,
+    .member-social1 a {
+        min-width: 44px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Container Padding */
+    .container {
+        width: 95%;
+        padding: 0 1rem;
+    }
+}
+
+/* Small Mobile Devices */
+@media (max-width: 480px) {
+    .about-hero {
+        padding: 2rem 0;
+        padding-top: calc(2rem + env(safe-area-inset-top));
+    }
+
+    .about-hero h2 {
+        font-size: 1.4rem;
+    }
+
+    .hero-text p {
+        font-size: 0.9rem;
+    }
+
+    .about-card {
+        padding: 1.25rem;
+        margin: 0 0.25rem;
+    }
+
+    .about-card-icon {
+        width: 48px;
+        height: 48px;
+    }
+
+    .about-card-icon svg {
+        width: 24px;
+        height: 24px;
+    }
+
+    .team-section {
+        padding: 2rem 0;
+        padding-bottom: calc(2rem + env(safe-area-inset-bottom));
+    }
+
+    .section-title {
+        font-size: 1.4rem;
+    }
+
+    .section-description {
+        font-size: 0.9rem;
+    }
+
+    .team-member img {
+        width: 160px;
+        height: 160px;
+    }
+
+    .member-info {
+        padding: 1rem;
+    }
+
+    .team-grid {
+        gap: 1.5rem;
     }
 }
 

@@ -1,8 +1,18 @@
 <div class="unirgrupo-container">
-  <h2 class="page-title">Unirse a un Grupo</h2>
+  <!-- Encabezado con título y botón hamburguesa -->
+  <div class="header-container">
+    <h2 class="page-title">Unirse a un Grupo</h2>
+    <button class="hamburger-btn" (click)="toggleFiltros()" [class.active]="mostrarFiltros">
+      <i class="fas" [ngClass]="mostrarFiltros ? 'fa-times' : 'fa-filter'"></i>
+      <span>{{ mostrarFiltros ? 'Cerrar' : 'Filtros' }}</span>
+    </button>
+  </div>
 
   <!-- Layout principal con sidebar y contenido -->
   <div class="main-layout">
+    <!-- Overlay oscuro cuando filtros están abiertos -->
+    <div class="overlay" [class.show]="mostrarFiltros" (click)="toggleFiltros()"></div>
+    
     <!-- Área principal para grupos -->
     <div class="content-area">
       <!-- Información de resultados -->
@@ -74,8 +84,8 @@
       </div>
     </div>
 
-    <!-- Barra lateral derecha para filtros -->
-    <div class="sidebar">
+    <!-- Barra lateral derecha para filtros - COLAPSABLE -->
+    <div class="sidebar" [class.show]="mostrarFiltros">
       <!-- Buscador de grupos -->
       <div class="search-container">
         <h3 class="sidebar-title">
