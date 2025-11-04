@@ -15,7 +15,9 @@
 
 const {
     encryptText,
-    decryptText
+    decryptText,
+    esMensajePermitido,
+    mensajesPermitidos
 } = require('./serverFunctions');
 
 // ============================================
@@ -112,255 +114,78 @@ describe('🔐 Pruebas de Encriptación y Desencriptación', () => {
 });
 
 // ============================================
-// 🔔 PRUEBAS DE ENVÍO DE NOTIFICACIONES
+// 📧 PRUEBAS DE VALIDACIÓN DE MENSAJES
 // ============================================
 
-describe('🔔 Pruebas de Envío de Notificaciones', () => {
+describe('📧 Pruebas de Validación de Mensajes Permitidos', () => {
     
-    test('debe enviar notificación al admin cuando un usuario se une a un grupo', () => {
-        // Arrange: Simular datos de unirse a grupo
-        const usuarioId = 100;
-        const adminId = 1;
-        const nombreUsuario = 'Juan Pérez';
-        const tipoNotificacion = 'usuario_se_une';
+    test('debe aceptar todos los mensajes permitidos del sistema', () => {
+        // Arrange & Act & Assert
+        // Verificar que TODOS los mensajes de la lista sean aceptados
+        expect(esMensajePermitido("Recibiste pago.")).toBe(true);
+        expect(esMensajePermitido("Nuevo integrante añadido.")).toBe(true);
+        expect(esMensajePermitido("Grupo lleno.")).toBe(true);
+        expect(esMensajePermitido("Tu pago fue recibido.")).toBe(true);
+        expect(esMensajePermitido("Se ha actualizado el grupo.")).toBe(true);
+        expect(esMensajePermitido("Se elimino el grupo.")).toBe(true);
+        expect(esMensajePermitido("Pago pendiente.")).toBe(true);
         
-        // Act: Construir el mensaje de notificación
-        const mensaje = `${nombreUsuario} se unió al grupo.`;
-        const notificacion = {
-            id_usuario: adminId,
-            mensaje: mensaje,
-            tipo: tipoNotificacion
-        };
-        
-        // Assert: Verificar que la notificación tiene los datos correctos
-        expect(notificacion.id_usuario).toBe(adminId);
-        expect(notificacion.mensaje).toContain('se unió al grupo');
-        expect(notificacion.tipo).toBe('usuario_se_une');
-        
-        console.log('✅ Notificación enviada al admin cuando usuario se une');
-        console.log(`   Admin: ${adminId}, Usuario: ${nombreUsuario}`);
+        console.log(`✅ Todos los ${mensajesPermitidos.length} mensajes permitidos fueron aceptados`);
     });
     
-    test('debe enviar notificación al admin cuando un usuario sale del grupo', () => {
-        // Arrange: Simular datos de salida de grupo
-        const usuarioId = 100;
-        const adminId = 1;
-        const nombreUsuario = 'María González';
-        const tipoNotificacion = 'usuario_sale';
+    test('debe rechazar mensajes no permitidos', () => {
+        // Arrange: Mensajes que NO están en la lista
+        const mensajesInvalidos = [
+            "Mensaje no autorizado",
+            "Hack attempt",
+            "Script injection <script>",
+            "Recibiste pago", // Sin punto final
+            "RECIBISTE PAGO.", // Mayúsculas
+            ""
+        ];
         
-        // Act: Construir el mensaje de notificación
-        const mensaje = `${nombreUsuario} ha salido del grupo.`;
-        const notificacion = {
-            id_usuario: adminId,
-            mensaje: mensaje,
-            tipo: tipoNotificacion
-        };
-        
-        // Assert: Verificar que la notificación tiene los datos correctos
-        expect(notificacion.id_usuario).toBe(adminId);
-        expect(notificacion.mensaje).toContain('ha salido del grupo');
-        expect(notificacion.tipo).toBe('usuario_sale');
-        
-        console.log('✅ Notificación enviada al admin cuando usuario sale');
-        console.log(`   Admin: ${adminId}, Usuario: ${nombreUsuario}`);
-    });
-    
-    test('debe enviar notificación al usuario cuando su pago es recibido', () => {
-        // Arrange: Simular datos de pago confirmado
-        const usuarioId = 100;
-        const grupoId = 5;
-        const tipoNotificacion = 'pago_recibido';
-        
-        // Act: Construir el mensaje de notificación
-        const mensaje = 'Tu pago fue recibido.';
-        const notificacion = {
-            id_usuario: usuarioId,
-            mensaje: mensaje,
-            tipo: tipoNotificacion,
-            id_grupo: grupoId
-        };
-        
-        // Assert: Verificar que la notificación tiene los datos correctos
-        expect(notificacion.id_usuario).toBe(usuarioId);
-        expect(notificacion.mensaje).toBe('Tu pago fue recibido.');
-        expect(notificacion.tipo).toBe('pago_recibido');
-        
-        console.log('✅ Notificación enviada al usuario cuando su pago es recibido');
-        console.log(`   Usuario: ${usuarioId}, Grupo: ${grupoId}`);
-    });
-    
-    test('debe enviar notificación al admin cuando recibe un pago', () => {
-        // Arrange: Simular datos de pago recibido por admin
-        const adminId = 1;
-        const usuarioId = 100;
-        const monto = 26.67;
-        const tipoNotificacion = 'pago_recibido_admin';
-        
-        // Act: Construir el mensaje de notificación
-        const mensaje = 'Recibiste pago.';
-        const notificacion = {
-            id_usuario: adminId,
-            mensaje: mensaje,
-            tipo: tipoNotificacion,
-            monto: monto,
-            de_usuario: usuarioId
-        };
-        
-        // Assert: Verificar que la notificación tiene los datos correctos
-        expect(notificacion.id_usuario).toBe(adminId);
-        expect(notificacion.mensaje).toBe('Recibiste pago.');
-        expect(notificacion.tipo).toBe('pago_recibido_admin');
-        expect(notificacion.monto).toBe(26.67);
-        
-        console.log('✅ Notificación enviada al admin cuando recibe un pago');
-        console.log(`   Admin: ${adminId}, Monto: $${monto}`);
-    });
-    
-    test('debe enviar notificación al admin cuando el grupo está lleno', () => {
-        // Arrange: Simular grupo lleno
-        const adminId = 1;
-        const grupoId = 5;
-        const maxUsuarios = 6;
-        const tipoNotificacion = 'grupo_lleno';
-        
-        // Act: Construir el mensaje de notificación
-        const mensaje = 'Grupo lleno.';
-        const notificacion = {
-            id_usuario: adminId,
-            mensaje: mensaje,
-            tipo: tipoNotificacion,
-            id_grupo: grupoId,
-            max_usuarios: maxUsuarios
-        };
-        
-        // Assert: Verificar que la notificación tiene los datos correctos
-        expect(notificacion.id_usuario).toBe(adminId);
-        expect(notificacion.mensaje).toBe('Grupo lleno.');
-        expect(notificacion.tipo).toBe('grupo_lleno');
-        expect(notificacion.max_usuarios).toBe(6);
-        
-        console.log('✅ Notificación enviada al admin cuando el grupo está lleno');
-        console.log(`   Admin: ${adminId}, Grupo: ${grupoId}, Máximo: ${maxUsuarios}`);
-    });
-    
-    test('debe enviar notificación a todos los miembros cuando el grupo se actualiza', () => {
-        // Arrange: Simular actualización de grupo
-        const grupoId = 5;
-        const miembros = [100, 101, 102];
-        const tipoNotificacion = 'grupo_actualizado';
-        
-        // Act: Construir notificaciones para cada miembro
-        const notificaciones = miembros.map(memberId => ({
-            id_usuario: memberId,
-            mensaje: 'Se ha actualizado el grupo.',
-            tipo: tipoNotificacion,
-            id_grupo: grupoId
-        }));
-        
-        // Assert: Verificar que cada miembro recibe la notificación
-        notificaciones.forEach(notif => {
-            expect(notif.mensaje).toBe('Se ha actualizado el grupo.');
-            expect(notif.tipo).toBe('grupo_actualizado');
-            expect(notif.id_grupo).toBe(grupoId);
+        // Act & Assert: Todos deben ser rechazados
+        mensajesInvalidos.forEach(mensaje => {
+            expect(esMensajePermitido(mensaje)).toBe(false);
         });
         
-        expect(notificaciones.length).toBe(miembros.length);
-        
-        console.log('✅ Notificación enviada a todos los miembros cuando el grupo se actualiza');
-        console.log(`   Miembros notificados: ${miembros.length}`);
+        console.log(`✅ ${mensajesInvalidos.length} mensajes no permitidos fueron rechazados`);
     });
     
-    test('debe enviar notificación al admin cuando usuario desbloquea la contraseña', () => {
-        // Arrange: Simular desbloqueo de contraseña
-        const adminId = 1;
-        const usuarioId = 100;
-        const nombreUsuario = 'Carlos López';
-        const nombreGrupo = 'Netflix Compartida';
-        const tipoNotificacion = 'contraseña_desbloqueada';
+    test('debe validar que la lista de mensajes tiene exactamente 7 elementos', () => {
+        // Arrange & Act
+        const numeroMensajes = mensajesPermitidos.length;
         
-        // Act: Construir el mensaje de notificación
-        const mensaje = `${nombreUsuario} desbloqueó la contraseña de ${nombreGrupo}.`;
-        const notificacion = {
-            id_usuario: adminId,
-            mensaje: mensaje,
-            tipo: tipoNotificacion,
-            usuario_que_desbloqueo: usuarioId,
-            nombre_grupo: nombreGrupo
-        };
+        // Assert: Debe haber exactamente 7 mensajes permitidos
+        expect(numeroMensajes).toBe(7);
         
-        // Assert: Verificar que la notificación tiene los datos correctos
-        expect(notificacion.id_usuario).toBe(adminId);
-        expect(notificacion.mensaje).toContain('desbloqueó la contraseña');
-        expect(notificacion.tipo).toBe('contraseña_desbloqueada');
-        expect(notificacion.nombre_grupo).toBe('Netflix Compartida');
-        
-        console.log('✅ Notificación enviada al admin cuando usuario desbloquea contraseña');
-        console.log(`   Admin: ${adminId}, Usuario: ${nombreUsuario}`);
+        console.log(`✅ Lista contiene ${numeroMensajes} mensajes permitidos (correcto)`);
     });
     
-    test('debe verificar que las notificaciones tengan timestamp', () => {
-        // Arrange: Crear notificación
-        const notificacion = {
-            id_usuario: 1,
-            mensaje: 'Notificación de prueba',
-            fecha_envio: new Date().toISOString()
-        };
+    test('debe ser sensible a mayúsculas y minúsculas', () => {
+        // Arrange
+        const mensajeOriginal = "Recibiste pago.";
+        const mensajeMayusculas = "RECIBISTE PAGO.";
+        const mensajeMinusculas = "recibiste pago.";
         
-        // Act & Assert: Verificar que tiene timestamp válido
-        expect(notificacion.fecha_envio).toBeDefined();
-        expect(typeof notificacion.fecha_envio).toBe('string');
-        expect(notificacion.fecha_envio).toMatch(/\d{4}-\d{2}-\d{2}/);
+        // Act & Assert
+        expect(esMensajePermitido(mensajeOriginal)).toBe(true);
+        expect(esMensajePermitido(mensajeMayusculas)).toBe(false);
+        expect(esMensajePermitido(mensajeMinusculas)).toBe(false);
         
-        console.log('✅ Notificación incluye timestamp válido');
-        console.log(`   Fecha: ${notificacion.fecha_envio}`);
+        console.log('✅ Validación sensible a mayúsculas/minúsculas funciona correctamente');
     });
     
-    test('debe verificar que las notificaciones tengan estado inicial "pendiente"', () => {
-        // Arrange: Crear notificación
-        const notificacion = {
-            id_usuario: 1,
-            mensaje: 'Notificación de prueba',
-            estado: 'pendiente'
-        };
+    test('debe rechazar mensajes con espacios extra', () => {
+        // Arrange: Mensajes con espacios adicionales
+        const mensajeConEspacios = " Recibiste pago. ";
+        const mensajeOriginal = "Recibiste pago.";
         
-        // Act & Assert: Verificar estado inicial
-        expect(notificacion.estado).toBe('pendiente');
+        // Act & Assert
+        expect(esMensajePermitido(mensajeOriginal)).toBe(true);
+        expect(esMensajePermitido(mensajeConEspacios)).toBe(false);
         
-        console.log('✅ Notificación tiene estado inicial "pendiente"');
-    });
-    
-    test('debe permitir cambio de estado de notificación: pendiente -> leida', () => {
-        // Arrange: Crear notificación
-        const notificacion = {
-            id_usuario: 1,
-            mensaje: 'Notificación de prueba',
-            estado: 'pendiente'
-        };
-        
-        // Act: Cambiar estado
-        notificacion.estado = 'leida';
-        
-        // Assert: Verificar cambio
-        expect(notificacion.estado).toBe('leida');
-        
-        console.log('✅ Notificación puede cambiar a estado "leida"');
-    });
-    
-    test('debe permitir cambio de estado de notificación: leida -> eliminada', () => {
-        // Arrange: Crear notificación
-        const notificacion = {
-            id_usuario: 1,
-            mensaje: 'Notificación de prueba',
-            estado: 'leida'
-        };
-        
-        // Act: Cambiar a eliminada
-        notificacion.estado = 'eliminada';
-        
-        // Assert: Verificar cambio
-        expect(notificacion.estado).toBe('eliminada');
-        
-        console.log('✅ Notificación puede cambiar a estado "eliminada"');
+        console.log('✅ Mensajes con espacios extra son rechazados correctamente');
     });
 });
 
@@ -375,15 +200,8 @@ afterAll(() => {
     console.log('✅ Funciones testeadas:');
     console.log('   1. encryptText() - Encriptación AES-256-CBC');
     console.log('   2. decryptText() - Desencriptación AES-256-CBC');
-    console.log('\n✅ Notificaciones testeadas:');
-    console.log('   • Usuario se une al grupo');
-    console.log('   • Usuario sale del grupo');
-    console.log('   • Pago recibido (usuario)');
-    console.log('   • Pago recibido (admin)');
-    console.log('   • Grupo lleno');
-    console.log('   • Grupo actualizado');
-    console.log('   • Contraseña desbloqueada');
-    console.log('\n📝 Total de pruebas: 17');
+    console.log('   3. esMensajePermitido() - Validación de mensajes');
+    console.log('\n📝 Total de pruebas: 11');
     console.log('🎯 Origen: server_FINAL.js (funciones REALES)');
     console.log('='.repeat(60) + '\n');
 });

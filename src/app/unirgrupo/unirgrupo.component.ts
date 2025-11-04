@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { environment } from '../app.config';
 import { SweetAlertService } from '../services/sweet-alert.service';
@@ -13,11 +13,10 @@ import { CommonModule } from '@angular/common';
   styleUrl: './unirgrupo.component.css'
 })
 
-export class UnirGrupoComponent implements OnInit, OnDestroy {
+export class UnirGrupoComponent implements OnInit {
 
   gruposDisponibles: any[] = [];
   gruposFiltrados: any[] = [];
-  gruposInterval: any;           // Variable para almacenar el intervalo de recarga
   
   // Control del menú de filtros (hamburguesa)
   mostrarFiltros: boolean = false;
@@ -89,11 +88,6 @@ export class UnirGrupoComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.obtenerGruposDisponibles(); // Cargar los grupos disponibles
-    
-    // Recargar grupos disponibles cada 30 segundos automáticamente
-    this.gruposInterval = setInterval(() => {
-      this.obtenerGruposDisponibles();
-    }, 30000);
   }
 
   obtenerGruposDisponibles(): void {
@@ -114,7 +108,7 @@ export class UnirGrupoComponent implements OnInit, OnDestroy {
             serviceType: grupo.nombre_servicio,
             maxUsers: grupo.num_integrantes,
             currentUsers: grupo.currentUsers,
-            costPerUser: Math.round((grupo.costo_total / grupo.num_integrantes) * 100) / 100,
+            costPerUser: grupo.costo_total / grupo.num_integrantes,
             paymentPolicy: grupo.fecha_inicio && grupo.fecha_vencimiento
               ? this.calcularPoliticaPago(grupo.fecha_inicio, grupo.fecha_vencimiento)
               : ''
@@ -237,11 +231,5 @@ export class UnirGrupoComponent implements OnInit, OnDestroy {
       // Si la fecha de vencimiento es dentro de 3 meses, puede ser trimestral, etc.
       // Retorna una cadena que describa la política de pago
       return 'monthly'; // Placeholder, implementar lógica real
-    }
-
-    ngOnDestroy(): void {
-      if (this.gruposInterval) {
-        clearInterval(this.gruposInterval);
-      }
     }
 }
