@@ -119,13 +119,22 @@ export class CreaciongrupoComponent implements OnInit {
           });
         },
         (error) => {
-          console.error('Error:', error);
-          if (error.status === 409) {
+          console.error('Error al crear grupo:', error);
+          console.error('Error completo:', JSON.stringify(error, null, 2));
+          
+          if (error.status === 404) {
+            // Usuario no encontrado
+            this.sweetAlert.error('Sesión inválida', 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.').then(() => {
+              localStorage.clear();
+              this.router.navigate(['/login']);
+            });
+          } else if (error.status === 409) {
             this.sweetAlert.error('Error al crear grupo', 'Ya existe un grupo con ese nombre o configuración.');
           } else if (error.status === 400) {
             this.sweetAlert.error('Datos inválidos', 'Verifica que todos los datos estén correctos.');
           } else {
-            this.sweetAlert.error('Error del servidor', 'Hubo un problema al crear el grupo. Inténtalo de nuevo.');
+            const mensaje = error.error?.message || 'Hubo un problema al crear el grupo. Inténtalo de nuevo.';
+            this.sweetAlert.error('Error del servidor', mensaje);
           }
         }
       );

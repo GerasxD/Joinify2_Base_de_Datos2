@@ -128,7 +128,17 @@ export class ConfiguracionComponent implements OnInit {
         },
         error: (error) => {
           console.error('❌ Error al cargar perfil desde API:', error);
-          this.mostrarNotificacion('Error de conexión. Usando datos locales.', 'error');
+          console.error('Error detallado:', JSON.stringify(error, null, 2));
+          
+          let mensajeError = 'Error de conexión. Usando datos locales.';
+          if (error.message) {
+            mensajeError = error.message;
+          }
+          if (error.status === 0) {
+            mensajeError = 'No se pudo conectar al servidor. Verifica tu conexión.';
+          }
+          
+          this.mostrarNotificacion(mensajeError, 'error');
           
           // Si hay error con la API, cargar al menos datos básicos del usuario local
           if (this.usuario) {

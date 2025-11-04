@@ -18,6 +18,9 @@ export class UnirGrupoComponent implements OnInit {
   gruposDisponibles: any[] = [];
   gruposFiltrados: any[] = [];
   
+  // Control del menú de filtros (hamburguesa)
+  mostrarFiltros: boolean = false;
+  
   // Propiedades para el buscador
   terminoBusqueda: string = '';
   
@@ -142,7 +145,15 @@ export class UnirGrupoComponent implements OnInit {
         });
       },
       error => {
-        this.sweetAlert.error('Error', 'No se pudo unir al grupo: ' + error.error.message);
+        console.error('Error al unirse al grupo:', error);
+        
+        // Manejar error de grupo inactivo con mensaje especial
+        if (error.status === 403 && error.error?.estiloError === 'grupo-inactivo') {
+          this.sweetAlert.warning('Grupo Inactivo', error.error.message);
+        } else {
+          const mensaje = error.error?.message || 'No se pudo unir al grupo. Intenta de nuevo.';
+          this.sweetAlert.error('Error', mensaje);
+        }
       }
     );
   }
@@ -207,6 +218,11 @@ export class UnirGrupoComponent implements OnInit {
       this.plataformaSeleccionada = '';
       this.filtroPlataformaActivo = false;
       this.gruposFiltrados = [...this.gruposDisponibles];
+    }
+    
+    // Método para toggle del menú de filtros
+    toggleFiltros(): void {
+      this.mostrarFiltros = !this.mostrarFiltros;
     }
     
     calcularPoliticaPago(fechaInicio: string, fechaVencimiento: string): string {
