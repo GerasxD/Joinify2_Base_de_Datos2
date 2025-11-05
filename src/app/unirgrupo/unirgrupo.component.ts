@@ -108,7 +108,10 @@ export class UnirGrupoComponent implements OnInit {
             serviceType: grupo.nombre_servicio,
             maxUsers: grupo.num_integrantes,
             currentUsers: grupo.currentUsers,
-            costPerUser: grupo.costo_total / grupo.num_integrantes,
+            // Redondear costo por usuario a 2 decimales
+            costPerUser: grupo.costo_total && grupo.num_integrantes 
+              ? parseFloat((grupo.costo_total / grupo.num_integrantes).toFixed(2)) 
+              : 0,
             paymentPolicy: grupo.fecha_inicio && grupo.fecha_vencimiento
               ? this.calcularPoliticaPago(grupo.fecha_inicio, grupo.fecha_vencimiento)
               : ''
