@@ -24,7 +24,7 @@ export class CreaciongrupoComponent implements OnInit {
     name: string;
     serviceType: string;
     maxUsers: number | null;
-    costPerUser: number;
+    totalCost: number;  // Costo total de la suscripción
     paymentPolicy: 'monthly' | 'annual';
     accountEmail: string;
     accountPassword: string;
@@ -32,11 +32,20 @@ export class CreaciongrupoComponent implements OnInit {
     name: '',
     serviceType: '',
     maxUsers: null,
-    costPerUser: 0,
+    totalCost: 0,  // Usuario ingresa el costo total
     paymentPolicy: 'monthly',
     accountEmail: '',
     accountPassword: ''
   };
+
+  // Computed property: costo por usuario (redondeado a 2 decimales)
+  get costPerUser(): number {
+    if (!this.groupData.maxUsers || this.groupData.maxUsers <= 0) {
+      return 0;
+    }
+    const cost = this.groupData.totalCost / this.groupData.maxUsers;
+    return Math.round(cost * 100) / 100;  // Redondear a 2 decimales
+  }
 
   serviceList: Servicio[] = [];
 
@@ -76,8 +85,12 @@ export class CreaciongrupoComponent implements OnInit {
   }
 
   onSubmit() {
-    if (!this.groupData.name || !this.groupData.serviceType || !this.groupData.maxUsers || !this.groupData.costPerUser) {
+    if (!this.groupData.name || !this.groupData.serviceType || !this.groupData.maxUsers || !this.groupData.totalCost) {
       this.sweetAlert.warning('Campos incompletos', 'Por favor, completa todos los campos obligatorios.');
+      return;
+    }
+    if (this.groupData.totalCost <= 0) {
+      this.sweetAlert.warning('Costo inválido', 'El costo total debe ser mayor a 0.');
       return;
     }
     if (!this.isValidEmail(this.groupData.accountEmail)) {
@@ -99,7 +112,7 @@ export class CreaciongrupoComponent implements OnInit {
       name: this.groupData.name,
       serviceType: this.groupData.serviceType,
       maxUsers: this.groupData.maxUsers,
-      costPerUser: Number(this.groupData.costPerUser) || 0,
+      totalCost: Number(this.groupData.totalCost) || 0,  // Enviar el costo total
       paymentPolicy: this.groupData.paymentPolicy,
       userId: parseInt(userId, 10),
       accountEmail: this.groupData.accountEmail,

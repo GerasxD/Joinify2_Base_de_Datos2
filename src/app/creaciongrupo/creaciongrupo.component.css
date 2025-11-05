@@ -344,6 +344,21 @@
         line-height: 1.4;
     }
 
+    /* Estilo para info de costo por usuario */
+    .form-group small.cost-info {
+        color: #ff6f00;
+        background: rgba(255,111,0,0.1);
+        padding: 0.5rem;
+        border-radius: 6px;
+        margin-top: 0.5rem;
+        border-left: 3px solid #ff6f00;
+    }
+
+    .form-group small.cost-info strong {
+        color: #fff;
+        font-weight: 600;
+    }
+
     /* Submit Button */
     .form-submit {
         padding: 1rem 1.25rem;
