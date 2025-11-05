@@ -47,17 +47,21 @@
         </div>
 
         <div class="form-group">
-          <label for="costPerUser"><i class="fas fa-dollar-sign"></i> Costo por usuario</label>
+          <label for="totalCost"><i class="fas fa-dollar-sign"></i> Costo total de la suscripción</label>
           <input
             type="number"
-            id="costPerUser"
-            [(ngModel)]="groupData.costPerUser"
-            name="costPerUser"
+            id="totalCost"
+            [(ngModel)]="groupData.totalCost"
+            name="totalCost"
             required
             min="0"
             step="0.01"
             class="form-input"
-            placeholder="Costo por usuario">
+            placeholder="Costo total (ej: 15.99)">
+          <small *ngIf="groupData.maxUsers && groupData.totalCost" class="cost-info">
+            <i class="fas fa-info-circle"></i> 
+            Costo por usuario: <strong>${{ costPerUser }}</strong>
+          </small>
         </div>
 
         <div class="form-group">

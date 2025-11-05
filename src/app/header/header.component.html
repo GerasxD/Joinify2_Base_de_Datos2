@@ -42,7 +42,9 @@
                 <i class="fas fa-user-cog"></i> Configuración
               </a>
               <a (click)="toggleNotificaciones(); $event.stopPropagation()">
-                <i class="fas fa-bell"></i> Mis Notificaciones
+                <i class="fas fa-bell"></i>
+                <span class="notificaciones-badge">{{ unreadCount }}</span>
+                Mis Notificaciones
               </a>
               <a (click)="togglePagosPopup(); $event.stopPropagation()">
                 <i class="fas fa-credit-card"></i> Historial de Pagos

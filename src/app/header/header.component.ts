@@ -1,14 +1,22 @@
 import { Component, OnInit, HostListener } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { DatePipe } from '@angular/common';
+import { DatePipe, registerLocaleData } from '@angular/common';
+import localeEs from '@angular/common/locales/es';
+// Registrar locale 'es' para que DatePipe funcione sin errores
+try {
+  registerLocaleData(localeEs, 'es');
+} catch (e) {
+  // Puede fallar si ya fue registrado; ignorar en ese caso
+  console.debug('registerLocaleData: ya registrado o no disponible', (e as any)?.message || e);
+}
 import { environment } from '../app.config';
 import { UsuarioService } from '../services/usuario.service';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [RouterModule, DatePipe],
+  imports: [RouterModule],
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.css']
 })
@@ -24,6 +32,8 @@ export class HeaderComponent implements OnInit {
   historialPagos: any[] = [];
   datePipe = new DatePipe('es');
   showMobileMenu = false;
+  // Polling interval id para refrescar notificaciones periódicamente
+  private notificacionesInterval: any = null;
 
   constructor(
     private router: Router, 
@@ -35,6 +45,10 @@ export class HeaderComponent implements OnInit {
     this.userName = localStorage.getItem('username') || '';
     this.userId = parseInt(localStorage.getItem('userId') || '0') || null;
     this.cargarFotoPerfil();
+    // Cargar notificaciones al iniciar para que se vean en el panel
+    this.cargarNotificaciones();
+    // Refrescar notificaciones cada 30s
+    this.notificacionesInterval = setInterval(() => this.cargarNotificaciones(), 30000);
     
     // Suscribirse a cambios en el usuario (para actualizar foto)
     this.usuarioService.usuarioActual$.subscribe(usuario => {
@@ -51,6 +65,13 @@ export class HeaderComponent implements OnInit {
         }
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    if (this.notificacionesInterval) {
+      clearInterval(this.notificacionesInterval);
+      this.notificacionesInterval = null;
+    }
   }
 
   isLoggedIn(): boolean {
@@ -202,6 +223,9 @@ export class HeaderComponent implements OnInit {
     return item.id_notificacion;
   }
 
+  // Mostrar/ocultar contraseñas por grupo (mapa por id)
+  showPassword: { [key: number]: boolean } = {};
+
   // Cargar foto de perfil del usuario
   cargarFotoPerfil(): void {
     // 1. Verificar si hay usuario en el servicio (más actualizado)
@@ -253,5 +277,37 @@ export class HeaderComponent implements OnInit {
   // Obtener la foto actual (para usar en el template)
   obtenerFotoPerfil(): string {
     return this.userPhoto || this.obtenerFotoDefecto();
+  }
+
+  // Contador de notificaciones pendientes (útil para mostrar badge)
+  get unreadCount(): number {
+    return this.notificaciones ? this.notificaciones.filter(n => n.estado === 'pendiente').length : 0;
+  }
+
+  togglePassword(groupId: number) {
+    const userId = localStorage.getItem('userId');
+    if (!userId) return;
+
+    // Cambiar la visibilidad localmente
+    this.showPassword[groupId] = !this.showPassword[groupId];
+
+    // Si se está mostrando la contraseña, notificar al admin
+    if (this.showPassword[groupId]) {
+      this.notificarDesbloqueoContraseña(groupId, userId);
+    }
+  }
+
+  private notificarDesbloqueoContraseña(groupId: number, userId: string): void {
+    this.http.post<any>(
+      `${environment.apiUrl}/api/grupos/${groupId}/desbloquear-contraseña`,
+      { userId }
+    ).subscribe(
+      (response) => {
+        console.log('✅ Notificación de desbloqueo enviada al admin');
+      },
+      (error) => {
+        console.error('❌ Error al enviar notificación de desbloqueo:', error);
+      }
+    );
   }
 }
