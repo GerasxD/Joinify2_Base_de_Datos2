@@ -100,11 +100,12 @@ test:frontend:
       artifacts: true
   before_script:
     # Instalar Chrome/Chromium para las pruebas
-    - apk add --no-cache chromium
+    - apk add --no-cache chromium chromium-chromedriver
     - export CHROME_BIN=/usr/bin/chromium-browser
+    - export CHROME_PATH=/usr/bin/chromium-browser
   script:
     - echo "🧪 Ejecutando pruebas del frontend..."
-    - npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage
+    - npm run test -- --watch=false --browsers=ChromeHeadlessCI --code-coverage
     - echo "✅ Pruebas del frontend completadas"
   coverage: '/Lines\s*:\s*(\d+\.\d+)%/'
   artifacts:
