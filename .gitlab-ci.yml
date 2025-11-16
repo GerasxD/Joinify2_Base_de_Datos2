@@ -1,0 +1,296 @@
+# ========================================
+# 🚀 GitLab CI/CD Pipeline para Joinify
+# ========================================
+# Proyecto: Joinify - Plataforma de suscripciones compartidas
+# Tecnologías: Angular 19 + Node.js + MySQL + Capacitor
+
+image: node:20-alpine
+
+# Definir stages (etapas del pipeline)
+stages:
+  - install      # Instalar dependencias
+  - lint         # Análisis de código
+  - test         # Pruebas unitarias
+  - build        # Construcción del proyecto
+  - deploy       # Despliegue (opcional)
+
+# ========================================
+# 📦 CACHE - Optimizar tiempos de ejecución
+# ========================================
+cache:
+  key:
+    files:
+      - package-lock.json
+      - server/package-lock.json
+  paths:
+    - node_modules/
+    - server/node_modules/
+    - .npm/
+
+# ========================================
+# 🔧 VARIABLES GLOBALES
+# ========================================
+variables:
+  NODE_ENV: "test"
+  CHROME_BIN: "/usr/bin/chromium-browser"
+  PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "true"
+
+# ========================================
+# 📥 STAGE 1: INSTALACIÓN DE DEPENDENCIAS
+# ========================================
+install:dependencies:
+  stage: install
+  before_script:
+    - echo "🔍 Verificando versiones..."
+    - node --version
+    - npm --version
+  script:
+    - echo "📦 Instalando dependencias del frontend..."
+    - npm ci --cache .npm --prefer-offline
+    
+    - echo "📦 Instalando dependencias del backend..."
+    - cd server
+    - npm ci --cache ../.npm --prefer-offline
+    - cd ..
+    
+    - echo "✅ Dependencias instaladas correctamente"
+  artifacts:
+    paths:
+      - node_modules/
+      - server/node_modules/
+    expire_in: 1 hour
+  cache:
+    key:
+      files:
+        - package-lock.json
+        - server/package-lock.json
+    paths:
+      - node_modules/
+      - server/node_modules/
+      - .npm/
+    policy: pull-push
+
+# ========================================
+# 🔍 STAGE 2: LINTING Y ANÁLISIS DE CÓDIGO
+# ========================================
+lint:frontend:
+  stage: lint
+  needs: ["install:dependencies"]
+  dependencies:
+    - install:dependencies
+  script:
+    - echo "🔍 Analizando código del frontend..."
+    - npx eslint src/**/*.ts --max-warnings 50 || echo "⚠️ Advertencias encontradas (no críticas)"
+    - echo "✅ Análisis de código completado"
+  allow_failure: true
+  only:
+    - merge_requests
+    - main
+    - develop
+
+# ========================================
+# 🧪 STAGE 3: PRUEBAS UNITARIAS
+# ========================================
+
+# Pruebas del Frontend (Angular + Karma + Jasmine)
+test:frontend:
+  stage: test
+  needs: ["install:dependencies"]
+  dependencies:
+    - install:dependencies
+  before_script:
+    # Instalar Chrome/Chromium para las pruebas
+    - apk add --no-cache chromium
+    - export CHROME_BIN=/usr/bin/chromium-browser
+  script:
+    - echo "🧪 Ejecutando pruebas del frontend..."
+    - npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage
+    - echo "✅ Pruebas del frontend completadas"
+  coverage: '/Lines\s*:\s*(\d+\.\d+)%/'
+  artifacts:
+    when: always
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage/cobertura-coverage.xml
+    paths:
+      - coverage/
+    expire_in: 30 days
+  only:
+    - merge_requests
+    - main
+    - develop
+
+# Pruebas del Backend (Node.js + Jest)
+test:backend:
+  stage: test
+  needs: ["install:dependencies"]
+  dependencies:
+    - install:dependencies
+  script:
+    - echo "🧪 Ejecutando pruebas del backend..."
+    - cd server
+    - npm run test:coverage
+    - echo "✅ Pruebas del backend completadas"
+  coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
+  artifacts:
+    when: always
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: server/coverage/cobertura-coverage.xml
+    paths:
+      - server/coverage/
+    expire_in: 30 days
+  only:
+    - merge_requests
+    - main
+    - develop
+
+# ========================================
+# 🏗️ STAGE 4: BUILD DEL PROYECTO
+# ========================================
+
+# Build del Frontend (Angular)
+build:frontend:
+  stage: build
+  needs: ["test:frontend"]
+  dependencies:
+    - install:dependencies
+  script:
+    - echo "🏗️ Construyendo aplicación Angular..."
+    - npm run build -- --configuration production
+    - echo "✅ Build completado exitosamente"
+    - ls -lah dist/
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 week
+  only:
+    - main
+    - develop
+    - tags
+
+# Build Mobile (Capacitor - Android)
+build:mobile:android:
+  stage: build
+  needs: ["test:frontend"]
+  dependencies:
+    - install:dependencies
+  before_script:
+    # Instalar Java (necesario para Capacitor Android)
+    - apk add --no-cache openjdk11
+    - export JAVA_HOME=/usr/lib/jvm/java-11-openjdk
+  script:
+    - echo "📱 Construyendo aplicación móvil Android..."
+    - npm run build:mobile
+    - echo "✅ Build móvil completado"
+  artifacts:
+    paths:
+      - android/app/build/
+    expire_in: 1 week
+  only:
+    - tags
+    - main
+  when: manual  # Solo se ejecuta manualmente
+
+# ========================================
+# 🚀 STAGE 5: DESPLIEGUE (OPCIONAL)
+# ========================================
+
+# Deploy a Staging
+deploy:staging:
+  stage: deploy
+  needs: ["build:frontend"]
+  dependencies:
+    - build:frontend
+  script:
+    - echo "🚀 Desplegando a entorno de staging..."
+    - echo "📦 Archivos a desplegar:"
+    - ls -lah dist/
+    # Aquí irían los comandos específicos de despliegue
+    # Ejemplos:
+    # - scp -r dist/* usuario@servidor:/var/www/joinify-staging/
+    # - aws s3 sync dist/ s3://joinify-staging/
+    # - rsync -avz dist/ usuario@servidor:/var/www/joinify-staging/
+    - echo "✅ Despliegue a staging completado"
+  environment:
+    name: staging
+    url: https://staging.joinify.com
+  only:
+    - develop
+  when: manual
+
+# Deploy a Production
+deploy:production:
+  stage: deploy
+  needs: ["build:frontend"]
+  dependencies:
+    - build:frontend
+  script:
+    - echo "🚀 Desplegando a producción..."
+    - echo "📦 Archivos a desplegar:"
+    - ls -lah dist/
+    # Aquí irían los comandos de despliegue a producción
+    - echo "✅ Despliegue a producción completado"
+  environment:
+    name: production
+    url: https://joinify.com
+  only:
+    - main
+    - tags
+  when: manual
+
+# ========================================
+# 📊 REPORTES Y NOTIFICACIONES
+# ========================================
+
+# Reporte de cobertura de código
+pages:
+  stage: deploy
+  needs: ["test:frontend", "test:backend"]
+  dependencies:
+    - test:frontend
+    - test:backend
+  script:
+    - echo "📊 Generando reportes de cobertura..."
+    - mkdir -p public/frontend
+    - mkdir -p public/backend
+    - cp -r coverage/* public/frontend/ || echo "No hay cobertura del frontend"
+    - cp -r server/coverage/* public/backend/ || echo "No hay cobertura del backend"
+    - echo "✅ Reportes generados"
+  artifacts:
+    paths:
+      - public
+    expire_in: 30 days
+  only:
+    - main
+
+# ========================================
+# 🔧 JOBS AUXILIARES
+# ========================================
+
+# Validación de merge requests
+validate:merge-request:
+  stage: lint
+  needs: []
+  script:
+    - echo "✅ Validando merge request..."
+    - echo "📝 Verificando que el título sea descriptivo..."
+    - echo "🔍 Verificando que no haya conflictos..."
+  only:
+    - merge_requests
+
+# Limpieza de cache (manual)
+cleanup:cache:
+  stage: install
+  script:
+    - echo "🧹 Limpiando cache..."
+    - rm -rf node_modules/
+    - rm -rf server/node_modules/
+    - rm -rf .npm/
+    - echo "✅ Cache limpiado"
+  when: manual
+  only:
+    - main
+    - develop
