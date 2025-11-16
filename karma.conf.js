@@ -14,15 +14,12 @@ module.exports = function (config) {
     ],
     client: {
       jasmine: {
-        // you can add configuration options for Jasmine here
-        // the possible options are listed at https://jasmine.github.io/api/edge/Configuration.html
-        // for example, you can disable the random execution with `random: false`
-        // or set a specific seed with `seed: 4321`
+        // opciones adicionales para Jasmine (si las necesitas)
       },
-      clearContext: false // leave Jasmine Spec Runner output visible in browser
+      clearContext: false // deja visible el resultado en el navegador
     },
     jasmineHtmlReporter: {
-      suppressAll: true // removes the duplicated traces
+      suppressAll: true // quita trazas duplicadas
     },
     coverageReporter: {
       dir: require('path').join(__dirname, './coverage/susc-comp'),
@@ -30,13 +27,18 @@ module.exports = function (config) {
       reporters: [
         { type: 'html' },
         { type: 'text-summary' },
-        { type: 'lcovonly' },
-        { type: 'cobertura' }
+        { type: 'lcovonly' }
       ]
     },
     reporters: ['progress', 'kjhtml'],
-    browsers: ['Chrome'],
+
+    // 👇 Opción A: usar ChromeHeadless por defecto
+    browsers: ['ChromeHeadless'],
+
     restartOnFileChange: true,
+    singleRun: false,
+
+    // Dejamos el launcher extra por si quieres usarlo en CI con --browsers=ChromeHeadlessCI
     customLaunchers: {
       ChromeHeadlessCI: {
         base: 'ChromeHeadless',
