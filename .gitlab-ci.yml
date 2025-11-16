@@ -75,9 +75,9 @@ install:dependencies:
 # ========================================
 lint:frontend:
   stage: lint
-  needs: ["install:dependencies"]
-  dependencies:
-    - install:dependencies
+  needs:
+    - job: install:dependencies
+      artifacts: true
   script:
     - echo "🔍 Analizando código del frontend..."
     - npx eslint src/**/*.ts --max-warnings 50 || echo "⚠️ Advertencias encontradas (no críticas)"
@@ -95,9 +95,9 @@ lint:frontend:
 # Pruebas del Frontend (Angular + Karma + Jasmine)
 test:frontend:
   stage: test
-  needs: ["install:dependencies"]
-  dependencies:
-    - install:dependencies
+  needs:
+    - job: install:dependencies
+      artifacts: true
   before_script:
     # Instalar Chrome/Chromium para las pruebas
     - apk add --no-cache chromium
@@ -124,9 +124,9 @@ test:frontend:
 # Pruebas del Backend (Node.js + Jest)
 test:backend:
   stage: test
-  needs: ["install:dependencies"]
-  dependencies:
-    - install:dependencies
+  needs:
+    - job: install:dependencies
+      artifacts: true
   script:
     - echo "🧪 Ejecutando pruebas del backend..."
     - cd server
@@ -154,9 +154,11 @@ test:backend:
 # Build del Frontend (Angular)
 build:frontend:
   stage: build
-  needs: ["test:frontend"]
-  dependencies:
-    - install:dependencies
+  needs:
+    - job: install:dependencies
+      artifacts: true
+    - job: test:frontend
+      artifacts: false
   script:
     - echo "🏗️ Construyendo aplicación Angular..."
     - npm run build -- --configuration production
@@ -174,9 +176,11 @@ build:frontend:
 # Build Mobile (Capacitor - Android)
 build:mobile:android:
   stage: build
-  needs: ["test:frontend"]
-  dependencies:
-    - install:dependencies
+  needs:
+    - job: install:dependencies
+      artifacts: true
+    - job: test:frontend
+      artifacts: false
   before_script:
     # Instalar Java (necesario para Capacitor Android)
     - apk add --no-cache openjdk11
@@ -201,9 +205,9 @@ build:mobile:android:
 # Deploy a Staging
 deploy:staging:
   stage: deploy
-  needs: ["build:frontend"]
-  dependencies:
-    - build:frontend
+  needs:
+    - job: build:frontend
+      artifacts: true
   script:
     - echo "🚀 Desplegando a entorno de staging..."
     - echo "📦 Archivos a desplegar:"
@@ -224,9 +228,9 @@ deploy:staging:
 # Deploy a Production
 deploy:production:
   stage: deploy
-  needs: ["build:frontend"]
-  dependencies:
-    - build:frontend
+  needs:
+    - job: build:frontend
+      artifacts: true
   script:
     - echo "🚀 Desplegando a producción..."
     - echo "📦 Archivos a desplegar:"
@@ -248,10 +252,11 @@ deploy:production:
 # Reporte de cobertura de código
 pages:
   stage: deploy
-  needs: ["test:frontend", "test:backend"]
-  dependencies:
-    - test:frontend
-    - test:backend
+  needs:
+    - job: test:frontend
+      artifacts: true
+    - job: test:backend
+      artifacts: true
   script:
     - echo "📊 Generando reportes de cobertura..."
     - mkdir -p public/frontend
