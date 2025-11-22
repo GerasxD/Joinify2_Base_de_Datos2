@@ -201,7 +201,7 @@ build:mobile:android:
 # 🚀 STAGE 5: DESPLIEGUE (OPCIONAL)
 # ========================================
 
-# Deploy a Staging
+# Deploy a Staging (placeholder, sigue siendo manual y local)
 deploy:staging:
   stage: deploy
   needs:
@@ -211,11 +211,7 @@ deploy:staging:
     - echo "🚀 Desplegando a entorno de staging..."
     - echo "📦 Archivos a desplegar:"
     - ls -lah dist/
-    # Aquí irían los comandos específicos de despliegue
-    # Ejemplos:
-    # - scp -r dist/* usuario@servidor:/var/www/joinify-staging/
-    # - aws s3 sync dist/ s3://joinify-staging/
-    # - rsync -avz dist/ usuario@servidor:/var/www/joinify-staging/
+    # Aquí podrían ir comandos específicos de staging (scp/rsync/aws s3, etc.)
     - echo "✅ Despliegue a staging completado"
   environment:
     name: staging
@@ -224,21 +220,35 @@ deploy:staging:
     - develop
   when: manual
 
-# Deploy a Production
+# Deploy a Production en Railway
 deploy:production:
   stage: deploy
+  image: ghcr.io/railwayapp/cli:latest
   needs:
     - job: build:frontend
       artifacts: true
+  variables:
+    RAILWAY_TOKEN: "$RAILWAY_TOKEN"
+    RAILWAY_SERVICE_ID: "$RAILWAY_SERVICE_ID"
   script:
-    - echo "🚀 Desplegando a producción..."
-    - echo "📦 Archivos a desplegar:"
-    - ls -lah dist/
-    # Aquí irían los comandos de despliegue a producción
-    - echo "✅ Despliegue a producción completado"
+    - echo "🚂 Iniciando deploy a Railway..."
+
+    # Ver qué build de Angular llegó desde el artifact
+    - ls -R dist || echo "No existe carpeta dist"
+
+    # Crear carpeta public dentro del server y copiar el build (outputPath: dist/susc-comp)
+    - mkdir -p server/public
+    - cp -r dist/susc-comp/* server/public/
+    - echo "📁 Frontend copiado a server/public"
+
+    # Ir a la carpeta del backend y hacer deploy con Railway
+    - cd server
+    - railway up --service="$RAILWAY_SERVICE_ID" --detach
+
+    - echo "✅ Deploy a Railway completado"
   environment:
     name: production
-    url: https://joinify.com
+    url: https://TU-PROYECTO.up.railway.app   # cámbiala por la URL real de Railway
   only:
     - main
     - tags
