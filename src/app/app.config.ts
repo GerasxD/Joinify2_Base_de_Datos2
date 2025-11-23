@@ -47,10 +47,10 @@ function getApiUrl(): string {
     // Cambia esta URL según tu configuración:
     
     // ⚠️ PARA EMULADOR: usa esto (YA ESTÁ ACTIVO)
-    return 'http://10.0.2.2:3001'; // Para emulador Android
+    // return 'http://10.0.2.2:3001'; // Para emulador Android
     
     // ⚠️ PARA DISPOSITIVO FÍSICO: descomenta la siguiente línea y pon TU IP local
-    // return 'http://192.168.1.100:3001'; // Descomenta y usa tu IP local para dispositivo físico
+    return 'http://192.168.50.202:3001'; // Descomenta y usa tu IP local para dispositivo físico
     
     // Para producción:
     // return 'https://tu-servidor-produccion.com';

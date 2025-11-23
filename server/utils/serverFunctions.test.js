@@ -20,10 +20,10 @@ const {
 } = require('./serverFunctions');
 
 // ============================================
-// 🔐 PRUEBAS DE ENCRIPTACIÓN Y DESENCRIPTACIÓN
+//  PRUEBAS DE ENCRIPTACIÓN Y DESENCRIPTACIÓN
 // ============================================
 
-describe('🔐 Pruebas de Encriptación y Desencriptación', () => {
+describe(' Pruebas de Encriptación y Desencriptación', () => {
     
     test('debe encriptar un texto correctamente', () => {
         // Arrange: Preparar datos de prueba
@@ -113,10 +113,10 @@ describe('🔐 Pruebas de Encriptación y Desencriptación', () => {
 });
 
 // ============================================
-// 🔔 PRUEBAS DE ENVÍO DE NOTIFICACIONES
+//  PRUEBAS DE ENVÍO DE NOTIFICACIONES
 // ============================================
 
-describe('🔔 Pruebas de Envío de Notificaciones', () => {
+describe(' Pruebas de Envío de Notificaciones', () => {
     
     test('debe enviar notificación al admin cuando un usuario se une a un grupo', () => {
         // Arrange: Simular datos de unirse a grupo
@@ -366,7 +366,7 @@ describe('🔔 Pruebas de Envío de Notificaciones', () => {
 });
 
 // ============================================
-// 📊 RESUMEN DE PRUEBAS
+//  RESUMEN DE PRUEBAS
 // ============================================
 
 afterAll(() => {
