@@ -31,28 +31,22 @@ export class LoginComponent {
     this.http.post<any>(url, this.loginData).subscribe(
       (response) => {
         console.log('Respuesta del login:', response);
-        
         if (response && response.usuario) {
           // Guardar el usuario completo en localStorage
           localStorage.setItem('usuario', JSON.stringify(response.usuario));
-          
-          // Mantener compatibilidad con el código anterior
           localStorage.setItem('userId', response.usuario.id_usuario.toString());
           localStorage.setItem('username', response.usuario.nombre);
-          
           console.log('Usuario guardado en localStorage:', response.usuario);
-
-          this.router.navigate(['/home']).then(() => {
-            window.location.reload();
-          });
+          this.router.navigate(['/home']);
         } else {
-          console.log('Login fallido: Respuesta inesperada del servidor');
+          console.log('Login fallido: Respuesta inesperada del servidor', response);
           this.sweetAlert.error('Error de autenticación', 'Por favor, verifica tus credenciales.');
         }
       },
       (error) => {
+        // Mostrar el error completo para depuración
         console.error('Error en login:', error);
-        this.showError('Usuario o contraseña incorrectos. Intenta nuevamente.');
+        this.showError('Error: ' + JSON.stringify(error));
       }
     );
   }
