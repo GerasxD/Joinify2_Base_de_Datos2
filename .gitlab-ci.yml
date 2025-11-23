@@ -38,7 +38,7 @@ variables:
 # ========================================
 # 📥 STAGE 1: INSTALACIÓN DE DEPENDENCIAS
 # ========================================
-install:dependencies
+install:dependencies:
   stage: install
   before_script:
     - echo "🔍 Verificando versiones..."
