@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { environment } from '../app.config';
 import { SweetAlertService } from '../services/sweet-alert.service';
+import { UsuarioService } from '../services/usuario.service';
 
 @Component({
   selector: 'app-login',
@@ -21,7 +22,8 @@ export class LoginComponent {
   constructor(
     private http: HttpClient, 
     private router: Router,
-    private sweetAlert: SweetAlertService
+    private sweetAlert: SweetAlertService,
+    private usuarioService: UsuarioService
   ) {}
 
   // Lógica para manejar el envío de los datos de login
@@ -36,6 +38,8 @@ export class LoginComponent {
           localStorage.setItem('usuario', JSON.stringify(response.usuario));
           localStorage.setItem('userId', response.usuario.id_usuario.toString());
           localStorage.setItem('username', response.usuario.nombre);
+            // Actualiza el usuario actual en el servicio para que el header se reactive
+            this.usuarioService.setUsuarioActual(response.usuario);
           console.log('Usuario guardado en localStorage:', response.usuario);
           this.router.navigate(['/home']);
         } else {

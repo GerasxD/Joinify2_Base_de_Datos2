@@ -9,6 +9,10 @@ import { EnvironmentService } from './environment.service';
   providedIn: 'root'
 })
 export class UsuarioService {
+    // Permite actualizar el usuario actual desde otros componentes
+    setUsuarioActual(usuario: Usuario) {
+      this.actualizarUsuarioLocal(usuario);
+    }
   private apiUrl: string;
   private usuarioActualSubject = new BehaviorSubject<Usuario | null>(null);
   public usuarioActual$ = this.usuarioActualSubject.asObservable();
