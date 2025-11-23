@@ -38,7 +38,7 @@ variables:
 # ========================================
 # 📥 STAGE 1: INSTALACIÓN DE DEPENDENCIAS
 # ========================================
-install:dependencies
+install:dependencies:
   stage: install
   before_script:
     - echo "🔍 Verificando versiones..."
@@ -78,6 +78,7 @@ lint:frontend:
   needs:
     - job: install:dependencies
       artifacts: true
+      optional: true        # 👈 dependencia opcional
   script:
     - echo "🔍 Analizando código del frontend..."
     - npx eslint src/**/*.ts --max-warnings 50 || echo "⚠️ Advertencias encontradas (no críticas)"
@@ -98,6 +99,7 @@ test:frontend:
   needs:
     - job: install:dependencies
       artifacts: true
+      optional: true        # 👈 dependencia opcional
   before_script:
     # Instalar Chrome/Chromium para las pruebas
     - apk add --no-cache chromium chromium-chromedriver nss
@@ -126,6 +128,7 @@ test:backend:
   needs:
     - job: install:dependencies
       artifacts: true
+      optional: true        # 👈 dependencia opcional
   script:
     - echo "🧪 Ejecutando pruebas del backend..."
     - cd server
