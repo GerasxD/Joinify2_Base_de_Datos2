@@ -41,7 +41,7 @@ const pool = mysql.createPool({
     host: 'localhost',
     user: 'root',
     password: 'Maicgio323-2',
-    database: 'joinify_db',
+    database: 'joinify_3',
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
@@ -1083,6 +1083,17 @@ app.get('/api/grupos/:groupId/credenciales', async (req, res) => {
   }
 });
 
+
+// ✅ Servir frontend de Angular (archivos estáticos)
+const publicPath = path.join(__dirname, 'public');
+app.use(express.static(publicPath));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(publicPath, 'index.html'));
+});
+
+
+
 // Test de conexión a MySQL al arrancar
 (async () => {
   try {
@@ -1096,11 +1107,21 @@ app.get('/api/grupos/:groupId/credenciales', async (req, res) => {
 })();
 
 // ✅ Iniciar servidor (evitar levantar al correr tests)
+// if (process.env.NODE_ENV !== 'test') {
+//     app.listen(3001, '0.0.0.0', () => {
+//         console.log('Servidor corriendo en http://localhost:3001');
+//     });
+// }
+
+// ✅ Iniciar servidor (evitar levantar al correr tests)
 if (process.env.NODE_ENV !== 'test') {
-    app.listen(3001, '0.0.0.0', () => {
-        console.log('Servidor corriendo en http://localhost:3001');
+    const PORT = process.env.PORT || 3001;
+
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`Servidor corriendo en http://localhost:${PORT}`);
     });
 }
+
 
 // Exportar para pruebas
 module.exports = { app, pool };

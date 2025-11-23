@@ -24,8 +24,8 @@ export class EnvironmentService {
    * - En producción: https://tu-servidor.com
    */
   private readonly API_URL_WEB = 'http://localhost:3001';
-  private readonly API_URL_MOBILE = 'http://10.0.2.2:3001'; // IP especial para emulador Android
-  // private readonly API_URL_MOBILE = 'http://192.168.1.100:3001'; // Descomenta y usa tu IP local para dispositivo físico
+  //private readonly API_URL_MOBILE = 'http://10.0.2.2:3001'; // IP especial para emulador Android
+  private readonly API_URL_MOBILE = 'http://192.168.1.100:3001'; // Descomenta y usa tu IP local para dispositivo físico
   
   constructor() {
     console.log('🌐 EnvironmentService inicializado');
