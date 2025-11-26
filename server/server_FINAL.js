@@ -42,6 +42,7 @@ const pool = mysql.createPool({
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || 'Maicgio323-2',
     database: process.env.DB_NAME || 'joinify_3',
+    port: process.env.DB_PORT || 3306,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
@@ -1085,7 +1086,7 @@ app.get('/api/grupos/:groupId/credenciales', async (req, res) => {
 
 
 // ✅ Servir frontend de Angular (archivos estáticos)
-const publicPath = path.join(__dirname, 'public');
+const publicPath = path.join(__dirname, '../public');
 app.use(express.static(publicPath));
 
 app.get('*', (req, res) => {
