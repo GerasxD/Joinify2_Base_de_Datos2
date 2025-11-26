@@ -245,6 +245,7 @@ deploy:production:
 
     # Ir a la carpeta del backend y hacer deploy con Railway
     - cd server
+    - railway link -p 24870c49-182d-4afa-8586-324c899af875 -e production
     - railway up --detach
 
     - echo "✅ Deploy a Railway completado"
