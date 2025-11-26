@@ -232,7 +232,6 @@ deploy:production:
       artifacts: true
   variables:
     RAILWAY_TOKEN: "$RAILWAY_TOKEN"
-    RAILWAY_SERVICE_ID: "$RAILWAY_SERVICE_ID"
   script:
     - echo "🚂 Iniciando deploy a Railway..."
 
@@ -246,7 +245,8 @@ deploy:production:
 
     # Ir a la carpeta del backend y hacer deploy con Railway
     - cd server
-    - railway up --service="$RAILWAY_SERVICE_ID" --detach
+    - railway link 24870c49-182d-4afa-8586-324c899af875
+    - railway up --detach
 
     - echo "✅ Deploy a Railway completado"
   environment:
