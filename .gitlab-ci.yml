@@ -234,6 +234,7 @@ deploy:production:
     RAILWAY_TOKEN: "$RAILWAY_TOKEN"
   script:
     - echo "🚂 Iniciando deploy a Railway..."
+    - echo "🔑 Longitud del Token: ${#RAILWAY_TOKEN}" # Debug: Si es 0, el token no está llegando
 
     # Ver qué build de Angular llegó desde el artifact
     - ls -R dist || echo "No existe carpeta dist"
