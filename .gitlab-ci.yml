@@ -230,8 +230,6 @@ deploy:production:
   needs:
     - job: build:frontend
       artifacts: true
-  variables:
-    RAILWAY_TOKEN: "$RAILWAY_TOKEN"
   script:
     - echo "🚂 Iniciando deploy a Railway..."
 
@@ -243,15 +241,14 @@ deploy:production:
     - cp -r dist/susc-comp/* server/public/
     - echo "📁 Frontend copiado a server/public"
 
-    # Ir a la carpeta del backend y hacer deploy con Railway
+    # Ir a la carpeta del backend y hacer deploy con Railway usando RAILWAY_TOKEN
     - cd server
-    - railway link -p 24870c49-182d-4afa-8586-324c899af875 -e production
     - railway up --detach
 
     - echo "✅ Deploy a Railway completado"
   environment:
     name: production
-    url: $RAILWAY_URL   # Railway genera esta variable automáticamente
+    url: $RAILWAY_URL   # Railway la inyecta automáticamente
   only:
     - main
     - tags
