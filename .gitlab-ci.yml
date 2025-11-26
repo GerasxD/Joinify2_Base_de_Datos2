@@ -224,6 +224,7 @@ deploy:staging:
   when: manual
 
 # Deploy a Production en Railway
+# Deploy a Production en Railway
 deploy:production:
   stage: deploy
   image: ghcr.io/railwayapp/cli:latest
@@ -243,16 +244,17 @@ deploy:production:
 
     # Ir a la carpeta del backend y hacer deploy con Railway usando RAILWAY_TOKEN
     - cd server
-    - railway up --detach
+    - railway up --service joinify-backend --detach
 
     - echo "✅ Deploy a Railway completado"
   environment:
     name: production
-    url: $RAILWAY_URL   # Railway la inyecta automáticamente
+    url: $RAILWAY_URL
   only:
     - main
     - tags
   when: manual
+
 
 # ========================================
 # 📊 REPORTES Y NOTIFICACIONES
