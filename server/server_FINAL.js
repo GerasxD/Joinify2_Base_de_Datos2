@@ -38,10 +38,10 @@ const upload = multer({ storage });
 
 // Configurar conexión a MySQL
 const pool = mysql.createPool({
-    host: 'localhost',
-    user: 'root',
-    password: 'Maicgio323-2',
-    database: 'joinify_3',
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || 'Maicgio323-2',
+    database: process.env.DB_NAME || 'joinify_3',
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0

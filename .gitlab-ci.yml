@@ -251,7 +251,7 @@ deploy:production:
     - echo "✅ Deploy a Railway completado"
   environment:
     name: production
-    url: https://TU-PROYECTO.up.railway.app   # cámbiala por la URL real de Railway
+    url: $RAILWAY_URL   # Railway genera esta variable automáticamente
   only:
     - main
     - tags
