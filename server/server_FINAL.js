@@ -1086,12 +1086,26 @@ app.get('/api/grupos/:groupId/credenciales', async (req, res) => {
 
 
 // ✅ Servir frontend de Angular (archivos estáticos)
+// NOTA: En producción (Railway), es posible que la carpeta '../public' no exista si solo se despliega el directorio 'server'.
 const publicPath = path.join(__dirname, '../public');
-app.use(express.static(publicPath));
 
-app.get('*', (req, res) => {
-  res.sendFile(path.join(publicPath, 'index.html'));
-});
+if (fs.existsSync(publicPath)) {
+    app.use(express.static(publicPath));
+    app.get('*', (req, res) => {
+        const indexPath = path.join(publicPath, 'index.html');
+        if (fs.existsSync(indexPath)) {
+            res.sendFile(indexPath);
+        } else {
+            res.send('Backend de Joinify funcionando correctamente (Frontend no encontrado en esta ruta)');
+        }
+    });
+} else {
+    console.warn('⚠️ Advertencia: No se encontró la carpeta public en:', publicPath);
+    // Ruta por defecto para verificar que el backend está vivo
+    app.get('/', (req, res) => {
+        res.send('Backend de Joinify funcionando correctamente 🚀');
+    });
+}
 
 
 
