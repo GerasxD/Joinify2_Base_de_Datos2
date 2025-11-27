@@ -42,6 +42,9 @@ export const appConfig: ApplicationConfig = {
 function getApiUrl(): string {
   const isNative = Capacitor.isNativePlatform();
   
+  // URL de producción en Railway
+  const PROD_URL = 'https://joinify-backend-production.up.railway.app';
+
   if (isNative) {
     // 🤖 MÓVIL (Android/iOS)
     // Cambia esta URL según tu configuración:
@@ -50,13 +53,14 @@ function getApiUrl(): string {
     // return 'http://10.0.2.2:3001'; // Para emulador Android
     
     // ⚠️ PARA DISPOSITIVO FÍSICO: descomenta la siguiente línea y pon TU IP local
-    return 'http://192.168.50.202:3001'; // Descomenta y usa tu IP local para dispositivo físico
+    // return 'http://192.168.50.202:3001'; // Descomenta y usa tu IP local para dispositivo físico
     
     // Para producción:
-    // return 'https://tu-servidor-produccion.com';
+    return PROD_URL;
   } else {
     // 🌐 WEB (Navegador)
-    return 'http://localhost:3001';
+    // return 'http://localhost:3001';
+    return PROD_URL;
   }
 }
 
